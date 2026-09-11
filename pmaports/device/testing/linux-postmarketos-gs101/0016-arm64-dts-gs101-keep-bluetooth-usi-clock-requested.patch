@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: postmarketOS <info@postmarketos.org>
+Date: Sun, 6 Sep 2026 18:30:00 +0900
+Subject: [PATCH] arm64: dts: gs101: keep Bluetooth USI clock requested
+
+Google's downstream UART driver unconditionally selects CLKREQ_ON for the
+Bluetooth USI so that the receiver remains clocked between characters.
+Request the equivalent behavior from the mainline Exynos USI driver.
+---
+ arch/arm64/boot/dts/exynos/google/gs101.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/exynos/google/gs101.dtsi b/arch/arm64/boot/dts/exynos/google/gs101.dtsi
+index 555555555555..666666666666 100644
+--- a/arch/arm64/boot/dts/exynos/google/gs101.dtsi
++++ b/arch/arm64/boot/dts/exynos/google/gs101.dtsi
+@@ -2000,5 +2000,6 @@ usi_uart_bt: usi@175b00c0 {
+ 			samsung,sysreg = <&sysreg_apm 0x4e4>;
+ 			samsung,mode = <USI_MODE_UART>;
++			samsung,clkreq-on;
+ 			status = "okay";
+ 
+ 			serial_16: serial@175b0000 {
+-- 
+2.51.0

@@ -1,0 +1,81 @@
+maintainer="Ingo Reitz <9l@9lo.re>"
+pkgname=device-google-bluejay
+pkgdesc="Google Pixel 6a"
+pkgver=6
+pkgrel=27
+url="https://postmarketos.org"
+license="MIT"
+arch="aarch64"
+options="!check !archcheck"
+depends="
+	android-tools
+	bluejay-btloader
+	bluez-deprecated
+	firmware-google-bluejay-bcmdhd
+	firmware-google-bluejay-bluetooth
+	libgpiod
+	linux-postmarketos-gs101
+	mesa-dri-gallium
+	mesa-egl
+	mesa-gbm
+	mesa-gles
+	mesa-vulkan-panfrost
+	postmarketos-base
+	soc-google-gs101
+	tinycbd
+"
+makedepends="devicepkg-dev"
+source="
+	deviceinfo
+	kernel-cmdline.conf
+	modules-initfs
+	polkit-networkmanager-wheel.rules
+	bluejay-power.start
+	bluejay-bluetooth.initd
+	bluejay-bluetooth.confd
+	bluedevilglobalrc
+	NetworkManager-bluejay.conf
+	bluejay-wifi-low-power
+	max77759-charger.conf
+"
+
+build() {
+	devicepkg_build $startdir $pkgname
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+
+	install -Dm644 "$srcdir"/polkit-networkmanager-wheel.rules \
+		"$pkgdir"/etc/polkit-1/rules.d/49-networkmanager-wheel.rules
+	install -Dm755 "$srcdir"/bluejay-power.start \
+		"$pkgdir"/etc/local.d/bluejay-power.start
+	install -Dm755 "$srcdir"/bluejay-bluetooth.initd \
+		"$pkgdir"/etc/init.d/bluejay-bluetooth
+	install -Dm644 "$srcdir"/bluejay-bluetooth.confd \
+		"$pkgdir"/etc/conf.d/bluejay-bluetooth
+	install -Dm644 "$srcdir"/bluedevilglobalrc \
+		"$pkgdir"/etc/xdg/bluedevilglobalrc
+	install -Dm644 "$srcdir"/bluedevilglobalrc \
+		"$pkgdir"/etc/skel/.config/bluedevilglobalrc
+	install -Dm644 "$srcdir"/NetworkManager-bluejay.conf \
+		"$pkgdir"/etc/NetworkManager/conf.d/20-bluejay.conf
+	install -Dm755 "$srcdir"/bluejay-wifi-low-power \
+		"$pkgdir"/usr/bin/bluejay-wifi-low-power
+	install -Dm644 "$srcdir"/max77759-charger.conf \
+		"$pkgdir"/etc/modules-load.d/max77759-charger.conf
+}
+
+sha512sums="
+d6f7d8b009175e05c5166c0deb6929dc6d517bec4573893d6b49671a2402a3f620ea7a07ac9464383eb718fbc4a0d70e0a6379c74738af8f11de08a38dd5ba81  deviceinfo
+9ed1246237067259c1e533bbbda28de56836a8ebe2fe9dc079f038552062be6b7daf9e2f46261d293d7eb58fa2d3d52d516f98c309f6adcd01d910a0e436cfcf  kernel-cmdline.conf
+a5171dc7a4221a5a63c02820bac1e372c557cee72db9f777099f67eb272595fad6019f876cb47dd1bf455eeb3a45a74f215f2e8c44a6e1bf7cf3d7d9f49d98ad  modules-initfs
+d90d7232f038c4771aafbed1a24692bc077792ec50353fddc08cfcb6545a48d57c3bdfedd8d48e857317a1c670c2eeecae3983ddd827ec3288c1695d4e0d1c52  polkit-networkmanager-wheel.rules
+ecbb4abb9c3d00a8d46a158c4a8d2d87724f30eb56f7e19d79037fb5617d7007358dc5ec683419dd2abe584e20afa284c68605f7711f4e8b9c3ef3a1400115ba  bluejay-power.start
+7bd17ddff1592b86b6d47dea5b58bd4006e3986248330a238174d9bcf0b00c676643a99fe401be0e4cc2da14bcf8e750afe624f53d679c2fa17f0c118e150552  bluejay-bluetooth.initd
+ee950315e82bea665ae0a3c03f837f26f67ad9361ecd6185c6b70a98d7fea1cc5f3e3d52d23c98324d7fb5b0438658edb3e8ae71e37eb20b4d363d8988b13208  bluejay-bluetooth.confd
+2d1ff3fc2186a748a3587571a9f2d401bc7f48599148f3dd2f23ca0ca13bceefe8aa8f42bc2313c8a443ebe63724b5fbe9bd80443453b97879618d587f56ebe0  bluedevilglobalrc
+25b1126141b899431944f476df7ef8240bbdf46bbe3a2ca1889566828c4d3fda43b8c1ed3614ee39d4b240205bd8e4afeebc7e7c0c8552e45616f9888a6b929d  NetworkManager-bluejay.conf
+3ca1a67b65e2338368821844243fc43fde2815c304b44d327f17d63a6192d600cf59be4e677f21c86da23ddae2f097d799cea7199f90f830b5c63f0a5cf4f757  bluejay-wifi-low-power
+dbf9ee8866177e1e2f83e841a53f078b3ebe4ee4a4ec14734fa0c2fb73cd578a65126e8fab4436a77b49e06374ba2ccdf69f4f960ffcce3e629418abfb8017a1  max77759-charger.conf
+"

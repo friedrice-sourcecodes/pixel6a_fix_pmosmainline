@@ -1,0 +1,19 @@
+# Local build state and exported images
+work/
+outputs/
+*.apk
+*.img
+*.img.zst
+*.zip
+*.log
+
+# Proprietary files extracted from a factory image
+pmaports/device/testing/firmware-google-bluejay-bcmdhd/bcmdhd.ko
+pmaports/device/testing/firmware-google-bluejay-bcmdhd/bcmdhd.cal
+pmaports/device/testing/firmware-google-bluejay-bcmdhd/bcmdhd_clm.blob
+pmaports/device/testing/firmware-google-bluejay-bcmdhd/fw_bcmdhd.bin
+pmaports/device/testing/firmware-google-bluejay-bluetooth/BCM.hcd
+
+# Upstream source archives are fetched by APKBUILD
+pmaports/temp/mesa/mesa-*.tar.xz
+

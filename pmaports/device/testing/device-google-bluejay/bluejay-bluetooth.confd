@@ -1,0 +1,4 @@
+# Optional stable locally-administered address. If empty, the service derives
+# one from wlan0 (or machine-id as a fallback) instead of shipping a device MAC.
+bluetooth_address=""
+

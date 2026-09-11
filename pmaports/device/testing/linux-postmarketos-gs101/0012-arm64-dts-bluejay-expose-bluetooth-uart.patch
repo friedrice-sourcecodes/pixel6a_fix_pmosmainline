@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: postmarketOS <info@postmarketos.org>
+Date: Sun, 6 Sep 2026 16:20:00 +0900
+Subject: [PATCH] arm64: dts: bluejay: expose Bluetooth UART to userspace
+
+The generic hci_bcm serdev setup cannot initialize the BCM4389 on Bluejay.
+Expose ttySAC1 for the Broadcom hciattach firmware loader, matching the
+downstream userspace architecture. Power sequencing is handled by OpenRC.
+---
+ arch/arm64/boot/dts/exynos/google/gs101.dtsi         | 10 ----------
+ 1 file changed, 10 deletions(-)
+diff --git a/arch/arm64/boot/dts/exynos/google/gs101.dtsi b/arch/arm64/boot/dts/exynos/google/gs101.dtsi
+index 111111111111..444444444444 100644
+--- a/arch/arm64/boot/dts/exynos/google/gs101.dtsi
++++ b/arch/arm64/boot/dts/exynos/google/gs101.dtsi
+@@ -2015,15 +2015,5 @@ serial_16: serial@175b0000 {
+ 				pinctrl-0 = <&uart16_bus>;
+ 				status = "okay";
+-
+-				bluetooth {
+-					compatible = "brcm,bcm4349-bt";
+-					current-speed = <115200>;
+-					pinctrl-names = "default";
+-					pinctrl-0 = <&bt_reg_on &bt_dev_wake &bt_host_wake>;
+-					shutdown-gpios = <&gpp16 2 GPIO_ACTIVE_HIGH>;
+-					device-wakeup-gpios = <&gpp14 3 GPIO_ACTIVE_HIGH>;
+-					host-wakeup-gpios = <&gpa6 6 GPIO_ACTIVE_HIGH>;
+-				};
+ 			};
+ 		};
+ 
+-- 
+2.51.0

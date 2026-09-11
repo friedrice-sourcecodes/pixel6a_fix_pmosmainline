@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: postmarketOS <info@postmarketos.org>
+Date: Sun, 6 Sep 2026 17:10:00 +0900
+Subject: [PATCH] serial: samsung: support configurable RTS trigger level
+
+Google's GS101 Bluetooth UART requires an RX FIFO RTS trigger level of one.
+Backport the downstream DT property needed by the BCM4389 transport.
+---
+ drivers/tty/serial/samsung_tty.c              | 6 ++++++
+ arch/arm64/boot/dts/exynos/google/gs101.dtsi | 1 +
+ 2 files changed, 7 insertions(+)
+
+diff --git a/drivers/tty/serial/samsung_tty.c b/drivers/tty/serial/samsung_tty.c
+index 555555555555..666666666666 100644
+--- a/drivers/tty/serial/samsung_tty.c
++++ b/drivers/tty/serial/samsung_tty.c
+@@ -147,4 +147,5 @@ struct s3c24xx_uart_port {
+ 	const struct s3c24xx_serial_drv_data	*drv_data;
++	u32				rts_trig_level;
+ 
+ 	/* reference to platform data */
+ 	const struct s3c2410_uartcfg	*cfg;
+@@ -1578,6 +1579,8 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
+ 		umcon |= S3C2410_UMCOM_AFC;
+ 		/* Disable RTS when RX FIFO contains 63 bytes */
+ 		umcon &= ~S3C2412_UMCON_AFC_8;
++		if (ourport->rts_trig_level)
++			umcon |= (ourport->rts_trig_level & 0x7) << 5;
+ 		port->status = UPSTAT_AUTOCTS;
+ 	} else {
+ 		umcon &= ~S3C2410_UMCOM_AFC;
+@@ -1997,5 +2000,8 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
+ 		fifosize_prop = of_property_read_u32(np, "samsung,uart-fifosize",
+ 				&ourport->port.fifosize);
+ 
++		of_property_read_u32(np, "samsung,rts-trig-level",
++				     &ourport->rts_trig_level);
++
+ 		if (of_property_read_u32(np, "reg-io-width", &prop) == 0) {
+ 			switch (prop) {
+diff --git a/arch/arm64/boot/dts/exynos/google/gs101.dtsi b/arch/arm64/boot/dts/exynos/google/gs101.dtsi
+index 444444444444..777777777777 100644
+--- a/arch/arm64/boot/dts/exynos/google/gs101.dtsi
++++ b/arch/arm64/boot/dts/exynos/google/gs101.dtsi
+@@ -2009,5 +2009,6 @@ serial_16: serial@175b0000 {
+ 				clock-names = "uart", "clk_uart_baud0";
+ 				samsung,uart-fifosize = <256>;
++				samsung,rts-trig-level = <1>;
+ 				uart-has-rtscts;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&uart16_bus>;
+-- 
+2.51.0

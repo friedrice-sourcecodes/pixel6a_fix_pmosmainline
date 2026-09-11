@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ -e /usr/lib/modules/7.0.6-gs101/modules.builtin ]; then
+	depmod -a 7.0.6-gs101
+fi
+
+exit 0

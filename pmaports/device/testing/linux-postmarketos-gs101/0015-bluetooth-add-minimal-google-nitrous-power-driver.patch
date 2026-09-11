@@ -1,0 +1,183 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: postmarketOS <info@postmarketos.org>
+Date: Sun, 6 Sep 2026 17:30:00 +0900
+Subject: [PATCH] Bluetooth: add minimal Google Nitrous power driver
+
+The BCM4389 used by GS101 Pixel devices is powered independently of its
+UART.  Add the small, upstream-style subset of Google's Nitrous driver
+needed to sequence REG_ON and DEV_WAKE and expose the device through
+rfkill.  UART firmware loading remains in userspace.
+---
+ drivers/bluetooth/Kconfig       | 11 +++++
+ drivers/bluetooth/Makefile      |  1 +
+ drivers/bluetooth/nitrous_min.c | 106 ++++++++++++++++++++++++++++++++++
+ .../boot/dts/exynos/google/gs101.dtsi         | 10 ++++
+ 4 files changed, 129 insertions(+)
+
+diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
+index aaaaaaaaaaaa..bbbbbbbbbbbb 100644
+--- a/drivers/bluetooth/Kconfig
++++ b/drivers/bluetooth/Kconfig
+@@ -509,7 +509,19 @@ config BT_INTEL_PCIE
+ 	  Intel Bluetooth transport driver for PCIe.
+ 	  This driver is required if you want to use Intel Bluetooth device
+ 	  with PCIe interface.
+ 
+ 	  Say Y here to compiler support for Intel Bluetooth PCIe device into
+ 	  the kernel or say M to compile it as module (btintel_pcie)
++
++config BT_GOOGLE_NITROUS
++	tristate "Google Nitrous Bluetooth power controller"
++	depends on RFKILL && GPIOLIB
++	help
++	  Power controller for the Broadcom Bluetooth function used on Google
++	  GS101 devices.  It sequences REG_ON and DEV_WAKE and provides an
++	  rfkill switch.  The UART transport and firmware download are handled
++	  separately.
++
++	  Say M to build this driver as nitrous_min.
++
+ endmenu
+diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
+index aaaaaaaaaaaa..bbbbbbbbbbbb 100644
+--- a/drivers/bluetooth/Makefile
++++ b/drivers/bluetooth/Makefile
+@@ -48,3 +48,4 @@ obj-$(CONFIG_BT_VIRTIO)         += virtio_bt.o
+ obj-$(CONFIG_BT_NXPUART)        += btnxpuart.o
++obj-$(CONFIG_BT_GOOGLE_NITROUS) += nitrous_min.o
+ 
+ obj-$(CONFIG_BT_HCIUART_NOKIA)  += hci_nokia.o
+diff --git a/drivers/bluetooth/nitrous_min.c b/drivers/bluetooth/nitrous_min.c
+new file mode 100644
+index 000000000000..111111111111
+--- /dev/null
++++ b/drivers/bluetooth/nitrous_min.c
+@@ -0,0 +1,106 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/* Minimal Google Nitrous Bluetooth power controller. */
++
++#include <linux/delay.h>
++#include <linux/gpio/consumer.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/rfkill.h>
++#include <linux/slab.h>
++
++struct nitrous_min {
++	struct device *dev;
++	struct gpio_desc *power;
++	struct gpio_desc *dev_wake;
++	struct gpio_desc *host_wake;
++	struct rfkill *rfkill;
++	bool blocked;
++};
++
++static int nitrous_min_set_block(void *data, bool blocked)
++{
++	struct nitrous_min *bt = data;
++
++	if (blocked == bt->blocked)
++		return 0;
++
++	if (blocked) {
++		gpiod_set_value_cansleep(bt->dev_wake, 0);
++		gpiod_set_value_cansleep(bt->power, 0);
++	} else {
++		gpiod_set_value_cansleep(bt->power, 0);
++		msleep(30);
++		gpiod_set_value_cansleep(bt->power, 1);
++		gpiod_set_value_cansleep(bt->dev_wake, 1);
++		usleep_range(10000, 20000);
++	}
++
++	bt->blocked = blocked;
++	dev_info(bt->dev, "Bluetooth power %s\n", blocked ? "off" : "on");
++	return 0;
++}
++
++static const struct rfkill_ops nitrous_min_rfkill_ops = {
++	.set_block = nitrous_min_set_block,
++};
++
++static int nitrous_min_probe(struct platform_device *pdev)
++{
++	struct nitrous_min *bt;
++	int ret;
++
++	bt = devm_kzalloc(&pdev->dev, sizeof(*bt), GFP_KERNEL);
++	if (!bt)
++		return -ENOMEM;
++	bt->dev = &pdev->dev;
++	bt->blocked = true;
++
++	bt->power = devm_gpiod_get(&pdev->dev, "shutdown", GPIOD_OUT_LOW);
++	if (IS_ERR(bt->power))
++		return dev_err_probe(&pdev->dev, PTR_ERR(bt->power), "REG_ON GPIO\n");
++	bt->dev_wake = devm_gpiod_get(&pdev->dev, "device-wakeup", GPIOD_OUT_LOW);
++	if (IS_ERR(bt->dev_wake))
++		return dev_err_probe(&pdev->dev, PTR_ERR(bt->dev_wake), "DEV_WAKE GPIO\n");
++	bt->host_wake = devm_gpiod_get(&pdev->dev, "host-wakeup", GPIOD_IN);
++	if (IS_ERR(bt->host_wake))
++		return dev_err_probe(&pdev->dev, PTR_ERR(bt->host_wake), "HOST_WAKE GPIO\n");
++
++	bt->rfkill = rfkill_alloc("nitrous_bluetooth", &pdev->dev,
++				  RFKILL_TYPE_BLUETOOTH, &nitrous_min_rfkill_ops, bt);
++	if (!bt->rfkill)
++		return -ENOMEM;
++	rfkill_init_sw_state(bt->rfkill, true);
++	ret = rfkill_register(bt->rfkill);
++	if (ret) {
++		rfkill_destroy(bt->rfkill);
++		return ret;
++	}
++	platform_set_drvdata(pdev, bt);
++	return 0;
++}
++
++static void nitrous_min_remove(struct platform_device *pdev)
++{
++	struct nitrous_min *bt = platform_get_drvdata(pdev);
++
++	nitrous_min_set_block(bt, true);
++	rfkill_unregister(bt->rfkill);
++	rfkill_destroy(bt->rfkill);
++}
++
++static const struct of_device_id nitrous_min_of_match[] = {
++	{ .compatible = "google,nitrous" }, { }
++};
++MODULE_DEVICE_TABLE(of, nitrous_min_of_match);
++static struct platform_driver nitrous_min_driver = {
++	.remove = nitrous_min_remove,
++	.driver = {
++		.name = "nitrous-min",
++		.of_match_table = nitrous_min_of_match,
++	},
++};
++module_platform_driver_probe(nitrous_min_driver, nitrous_min_probe);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Minimal Google Nitrous Bluetooth power controller");
+diff --git a/arch/arm64/boot/dts/exynos/google/gs101.dtsi b/arch/arm64/boot/dts/exynos/google/gs101.dtsi
+index 444444444444..555555555555 100644
+--- a/arch/arm64/boot/dts/exynos/google/gs101.dtsi
++++ b/arch/arm64/boot/dts/exynos/google/gs101.dtsi
+@@ -14,5 +14,15 @@ / {
+ 
+ 	interrupt-parent = <&gic>;
+ 
++	bluetooth_power: bluetooth-power {
++		compatible = "google,nitrous";
++		pinctrl-names = "default";
++		pinctrl-0 = <&bt_reg_on &bt_dev_wake &bt_host_wake>;
++		shutdown-gpios = <&gpp16 2 GPIO_ACTIVE_HIGH>;
++		device-wakeup-gpios = <&gpp14 3 GPIO_ACTIVE_HIGH>;
++		host-wakeup-gpios = <&gpa6 6 GPIO_ACTIVE_HIGH>;
++		status = "okay";
++	};
++
+ 	aliases {
+ 		pinctrl0 = &pinctrl_gpio_alive;
+-- 
+2.51.0

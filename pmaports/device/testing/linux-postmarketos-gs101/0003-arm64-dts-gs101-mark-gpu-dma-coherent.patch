@@ -1,0 +1,20 @@
+From: Bluejay postmarketOS port
+Subject: [PATCH] arm64: dts: gs101: mark GPU DMA coherent
+
+The GS101 GPU is integrated coherently and advertises ACE-Lite through
+GPU_COHERENCY_FEATURES.  Without dma-coherent, panfrost selects
+COHERENCY_NONE, while Mesa and the GPU exchange job descriptors and shader
+memory through a path intended to be coherent.  Match the newer GS101 tree
+and describe the integration correctly.
+
+--- a/arch/arm64/boot/dts/exynos/google/gs101.dtsi
++++ b/arch/arm64/boot/dts/exynos/google/gs101.dtsi
+@@ -1848,6 +1848,7 @@
+ 			interrupt-names = "job", "mmu", "gpu";
+ 			interrupts = <GIC_SPI 420 IRQ_TYPE_LEVEL_HIGH 0>,
+ 				     <GIC_SPI 421 IRQ_TYPE_LEVEL_HIGH 0>,
+ 				     <GIC_SPI 419 IRQ_TYPE_LEVEL_HIGH 0>;
++			dma-coherent;
+ 		};
+ 	};
+ 

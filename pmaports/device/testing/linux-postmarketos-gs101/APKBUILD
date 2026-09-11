@@ -1,0 +1,146 @@
+maintainer="Ingo Reitz <9l@9lo.re>"
+pkgname=linux-postmarketos-gs101
+pkgver=7.0.6
+pkgrel=37
+pkgdesc="Google gs101 (Pixel 6 Series) close-to-mainline kernel"
+arch="aarch64"
+_carch="arm64"
+_flavor="postmarketos-gs101"
+url="https://kernel.org"
+license="GPL-2.0-only"
+options="!strip !check !tracedeps pmb:cross-native pmb:kconfigcheck-community"
+makedepends="
+	bison
+	clang
+	findutils
+	flex
+	lld
+	llvm
+	lz4
+	openssl-dev
+	perl
+	zstd
+"
+
+# Source
+_commit="d28cfa4275b95e93f4b7a1e743de31b723bd21b8"
+_config="config-$_flavor.$arch"
+source="
+	$pkgname-$_commit.tar.gz::https://github.com/gs101-mainline/linux/archive/$_commit.tar.gz
+	$_config
+	0001-drm-panfrost-add-mali-g78.patch
+	0002-drm-panfrost-log-gpu-capability-registers.patch
+	0003-arm64-dts-gs101-mark-gpu-dma-coherent.patch
+	0004-clk-gs101-add-hsi1.patch
+	0005-phy-gs101-add-pcie.patch
+	0006-pci-gs101-add-root-complex.patch
+	0007-drm-sysfb-clip-damage-to-scanout.patch
+	0008-pci-gs101-add-cpif-compatibility.patch
+	0009-arm64-dts-gs101-add-cpif.patch
+	0010-arm64-dts-gs101-add-max77759-fuel-gauge.patch
+	0011-arm64-dts-gs101-add-bcm4389-bluetooth.patch
+	0012-arm64-dts-bluejay-expose-bluetooth-uart.patch
+	0013-serial-samsung-support-rts-trigger-level.patch
+	0014-serial-samsung-log-bluejay-uart-state.patch
+	0015-bluetooth-add-minimal-google-nitrous-power-driver.patch
+	0016-arm64-dts-gs101-keep-bluetooth-usi-clock-requested.patch
+	0017-bluetooth-tolerate-disallowed-mws-config.patch
+	0018-thermal-gs101-add-read-only-acpm-sensors.patch
+	gs101_acpm_thermal.c
+	max17042_battery.c
+	max17042_battery.h
+	max77759_charger.c
+	max77759.h
+	power-supply-Kconfig
+	power-supply-Makefile
+	linear_range.h
+	linear_ranges.c
+	gs101-cpif-20260905.tar.gz
+"
+builddir="$srcdir/linux-$_commit"
+_outdir="out"
+
+prepare() {
+	default_prepare
+	cp "$srcdir/config-$_flavor.$CARCH" .config
+	cp -a "$srcdir/modem" "$builddir/modem"
+	cp -a "$srcdir/vendor-stub-include" "$builddir/vendor-stub-include"
+	cp "$srcdir/max17042_battery.c" \
+		"$builddir/drivers/power/supply/max17042_battery.c"
+	cp "$srcdir/max17042_battery.h" \
+		"$builddir/include/linux/power/max17042_battery.h"
+	cp "$srcdir/max77759_charger.c" \
+		"$builddir/drivers/power/supply/max77759_charger.c"
+	cp "$srcdir/max77759.h" "$builddir/include/linux/mfd/max77759.h"
+	cp "$srcdir/power-supply-Kconfig" \
+		"$builddir/drivers/power/supply/Kconfig"
+	cp "$srcdir/power-supply-Makefile" \
+		"$builddir/drivers/power/supply/Makefile"
+	cp "$srcdir/linear_range.h" "$builddir/include/linux/linear_range.h"
+	cp "$srcdir/linear_ranges.c" "$builddir/lib/linear_ranges.c"
+	cp "$srcdir/gs101_acpm_thermal.c" \
+		"$builddir/drivers/thermal/samsung/gs101_acpm_thermal.c"
+}
+
+build() {
+	unset LDFLAGS
+	make ARCH="$_carch" LLVM=1 \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-postmarketOS"
+	make ARCH="$_carch" LLVM=1 M="$builddir/modem" \
+		CONFIG_SHM_IPC=m CONFIG_BOOT_DEVICE_SPI=m \
+		CONFIG_EXYNOS_MODEM_IF=m modules
+}
+
+package() {
+	mkdir -p "$pkgdir"/boot
+
+	make Image.lz4 modules_install dtbs_install \
+		ARCH="$_carch" \
+		LLVM=1 \
+		INSTALL_PATH="$pkgdir"/boot \
+		INSTALL_MOD_PATH="$pkgdir"/usr \
+		INSTALL_MOD_STRIP=1 \
+		INSTALL_DTBS_PATH="$pkgdir"/boot/dtbs
+	make modules_install ARCH="$_carch" LLVM=1 M="$builddir/modem" \
+		INSTALL_MOD_PATH="$pkgdir"/usr INSTALL_MOD_STRIP=1
+	rm -f "$pkgdir"/lib/modules/*/build "$pkgdir"/lib/modules/*/source
+
+	install -D "$builddir"/include/config/kernel.release \
+		"$pkgdir"/usr/share/kernel/$_flavor/kernel.release
+
+	install -Dm644 "$builddir/arch/$_carch/boot/Image.lz4" \
+		"$pkgdir/boot/vmlinuz"
+}
+
+sha512sums="
+7cd9d2d5e46841bebdb5b78fd4d67d5859e935cec63b227bf1b3ed5cc9b96405b8b3427c4401e5bec6aaf24a1199712ef9e3a1b3a4560a6fdf48d4b70fa3de99  linux-postmarketos-gs101-d28cfa4275b95e93f4b7a1e743de31b723bd21b8.tar.gz
+4b7ec0f4247abcb897dfc60eb7c6d77d2e881d88175858d7f503b470a25b57d80cc4edace1284a7fbfc81cb68d3c1944f68b83d5017ec21be7787047983a7d48  config-postmarketos-gs101.aarch64
+2ca53c62e09d6a1873d90222ad59f5f2ad0d43dee61c306b42b116b774a7e6c29f73ae3084f9d8763467f9c01ddb8fa7c3752d3fa803a94e7e8b5682bf62d944  0001-drm-panfrost-add-mali-g78.patch
+de686fa6d691b2612394337643025bf59aa6564af9de2c1d00c8234d1d743e0e868c7d55742fb981379f0f67f82307d0d712c424a582378a45f3592b75221306  0002-drm-panfrost-log-gpu-capability-registers.patch
+8455d4c3c677ffa2fe74679aab6a146cafeacd4a0905edc77a96607424267553444c1c3fa7768b1598d2c09ceedae29cc6a349fb4410c1436295e97f23c07daa  0003-arm64-dts-gs101-mark-gpu-dma-coherent.patch
+3ca86c46339e569f41f41911d9de963823cbc5c1fcc0412da46aec6f2a1b4733d665fa176c45ad760fa6071e399612cde3b48abf9f80278636d21b7c55d844cd  0004-clk-gs101-add-hsi1.patch
+a2216a75499153875e2813fe19559281801d80437deef183cc74e78a5fee772035b4fe673ea8672a89e1c44890ad1f583239f73019cbffd62bcee53f320ebddb  0005-phy-gs101-add-pcie.patch
+5a16cae46f14e81f86f4f82b6a337b915c8d822a33216b88c76d5ceb0609f9dbb3cc83714f946df614a66644f1b6c4a2b8d88e5389293be8509d906dec17a8b3  0006-pci-gs101-add-root-complex.patch
+d4896d032320154bc5764f7637e1d854fa99fdf952650c037a3240b63f649cc2be89c32f69e2b311a3c09795ea1c33b00e8047084739c9b6067044c7c747867d  0007-drm-sysfb-clip-damage-to-scanout.patch
+b5e968374265f95666126640626c393f7bba022279dd4ba430c04a98b02b5d5cb36819327ff0a2d5d65bd499ef11cd96be675eb09d7a1090d6dec43190635fff  0008-pci-gs101-add-cpif-compatibility.patch
+8a5f7fa5c3d70c90259cb0c4a1d26ab6bb23b0d17542a5385870333513778da7ef738977c346ea81fd4ae6d5db11f0ea6332da10048c01a41d6cd7da83afefae  0009-arm64-dts-gs101-add-cpif.patch
+4f0c40b758d428120c916655c4e6e4e1e0b295fad59fbd262ee227e9fac7500a30ae186cbbc33a71273b530e4354278a7967157453cb2f6faa4e2096479883b8  0010-arm64-dts-gs101-add-max77759-fuel-gauge.patch
+6833c2300ae86067411001647f7f6365d3d6ec6ff8ad8e85fb36f3968fe92a8c02bb261238592085b18a43840addbc63339bc3cf9c65eea123a299a86eb21355  0011-arm64-dts-gs101-add-bcm4389-bluetooth.patch
+f6df489288494c4684da2eb40e42a453aa2c092300cac883030e11de19444b18bbc12c689b1f1440ee8c10284ece6174ad178e5e6443551120696621d43f1428  0012-arm64-dts-bluejay-expose-bluetooth-uart.patch
+da22f721c2fe614228c560727ceac05012b276bc6a80ac4582a8b532adf44d94b8f610e7635feceeed2181bbfbeea8b9181cf199fd3d51ed7551ce2066d75a2e  0013-serial-samsung-support-rts-trigger-level.patch
+3c5e3a33c8526ae55093cbb0520749ecdba1439811f8f7b625a8d1306b45ae899e5f694623b576fd9ba3e4a65ba1dbc25becc36a530f9abfeaf93c4123d28894  0014-serial-samsung-log-bluejay-uart-state.patch
+487fda286be9c7d8572e8176976310aae31bfa3148c86f50dbcffbfdf9da033a5ad447cd2dffe276f16530f82a186b197e66a7fe1cc09f5070eee2c208572672  0015-bluetooth-add-minimal-google-nitrous-power-driver.patch
+727942643684cb9c0a071db0bd806138200d0a54451d612718f3052673c36df3ee1b1f040de2288b6cb8c66428c1ec64ae7ae3d55d8c4b3f98da4d0a4c14a606  0016-arm64-dts-gs101-keep-bluetooth-usi-clock-requested.patch
+7c58dfde21df0ebcc6b913a683aa09744b3030e420dd95f368eb1bde1ed05f68e05a319ef1ff74600571b154645aab2a846172b3c420be4a921bb168c7c4fa18  0017-bluetooth-tolerate-disallowed-mws-config.patch
+ea7ef6df0f1cec2269a2aa06aed662861fca28a3c93b202a5b9011b1bf1a3ebc9eab7ff85e8d6b6bd55bf640ff59f76bd9647999d32d55e4b886ef72d9cff8a6  0018-thermal-gs101-add-read-only-acpm-sensors.patch
+0881e7169bbf0abc18c9fcedc728cb270383013f19b86c8363aa538486363b4d427c3759307e229c8804130006521d939de72afc65cc5358ce14f434de7ae6b8  gs101_acpm_thermal.c
+641cdbf368fc607ed89f548b06912d93870147428b27f8382f935d9856d717a8f61af57be7976f66e78194c26a92feab67e2b1d749d7b6f85972e8ef06ddc44c  max17042_battery.c
+6e2a98ef41b54460556f2308bc3a1fbd14e9c80140cd2bbc1073e423ff2cd999d5b60515bf68e692d3a98664988218fe8873897ac5a7ece3569d26336c7a0cb9  max17042_battery.h
+6993660d2ab9f14ed1b0e087d1ab041c779f9b0206905a685132dcbb66821ff35fdd6c2a000b85a7471240482518ec2d554d54b468623ae5bbe8a2ea0bef9e8c  max77759_charger.c
+a581d9c2fb34c786ce259871a15fb618222fae007c2b53b36fa6286e7eba0fb17d1342208fdb760366525105eb7504f159fa8e794e49d0c81ff10db8ab1fda18  max77759.h
+04e02f8025f7c0ae42cfaba1e88ca5527ebc095011d9c7a2c6b75b4b768a48e1ca2f028255b42c2cacc0c9b68d0bdf2156a264cbd475d22231ed65cbe2224e83  power-supply-Kconfig
+b566566f7dd21d294bfeed3ff61f097a294bcaa4fb3ad615d6612d63eb608d2fc985efe85ee32aa0f3c55481e2e7bedbd1826998b07c1b4ace4493431e1682b8  power-supply-Makefile
+032792e2f0b33a0376d7eddedf03fe49e8559b316d826239e2f494f3f6efbbeb8556657f4c50823afaec1c8fbb1d075e9c0894157cad53a9394b7877f21b32f3  linear_range.h
+f629c0602934d512e42aca3f3028607ec4b281c162b33593f944cc315545bc96075cad03555eea1aafdef251d2e02ec660b718e0a6c98509d2f260318b1b13f6  linear_ranges.c
+80fb147d43991cb8a35829184520e022bdfdb0eaede827c7310ccf87af771682e61a326068d7c29db5cb9730507136eb533340bc3422cdc6aff040cd85fc5046  gs101-cpif-20260905.tar.gz
+"

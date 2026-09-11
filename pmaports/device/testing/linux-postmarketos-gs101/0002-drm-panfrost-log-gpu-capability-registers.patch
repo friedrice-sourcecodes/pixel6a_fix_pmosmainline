@@ -1,0 +1,36 @@
+From: Bluejay postmarketOS port
+Subject: [PATCH] drm/panfrost: log GPU capability registers during probe
+
+Print the capability values exposed to Mesa so experimental Mali-G78 bring-up
+can compare the hardware-reported limits with supported Valhall GPUs.  This is
+diagnostic only and does not change GPU programming.
+
+--- a/drivers/gpu/drm/panfrost/panfrost_gpu.c
++++ b/drivers/gpu/drm/panfrost/panfrost_gpu.c
+@@ -382,6 +382,26 @@ static int panfrost_gpu_init_features(struct panfrost_device *pfdev)
+ 	dev_info(pfdev->base.dev, "shader_present=0x%0llx l2_present=0x%0llx",
+ 		 pfdev->features.shader_present, pfdev->features.l2_present);
+ 
++	dev_info(pfdev->base.dev,
++		 "Thread: features=0x%08x max_threads=%u max_workgroup=%u max_barrier=%u tls_alloc=%u",
++		 pfdev->features.thread_features,
++		 pfdev->features.max_threads,
++		 pfdev->features.thread_max_workgroup_sz,
++		 pfdev->features.thread_max_barrier_sz,
++		 pfdev->features.thread_tls_alloc);
++	dev_info(pfdev->base.dev,
++		 "Coherency: available=0x%08x selected=0x%08x AFBC=0x%08x core_groups=%u",
++		 pfdev->features.coherency_features,
++		 pfdev->features.selected_coherency,
++		 pfdev->features.afbc_features,
++		 pfdev->features.nr_core_groups);
++	dev_info(pfdev->base.dev,
++		 "Texture: %08x %08x %08x %08x; JS: %08x %08x %08x",
++		 pfdev->features.texture_features[0], pfdev->features.texture_features[1],
++		 pfdev->features.texture_features[2], pfdev->features.texture_features[3],
++		 pfdev->features.js_features[0], pfdev->features.js_features[1],
++		 pfdev->features.js_features[2]);
++
+ 	return 0;
+ }
+ 

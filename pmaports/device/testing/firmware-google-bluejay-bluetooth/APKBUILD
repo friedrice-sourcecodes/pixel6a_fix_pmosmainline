@@ -1,0 +1,21 @@
+pkgname=firmware-google-bluejay-bluetooth
+pkgver=1
+pkgrel=5
+pkgdesc="Google Pixel 6a BCM4389 Bluetooth firmware"
+url="https://developers.google.com/android/images"
+arch="aarch64"
+license="proprietary"
+options="!check !strip"
+source="BCM.hcd"
+
+package() {
+	install -Dm644 "$srcdir"/BCM.hcd \
+		"$pkgdir"/lib/firmware/brcm/BCM.hcd
+	ln -s BCM.hcd "$pkgdir"/lib/firmware/brcm/BCM4389.hcd
+	ln -s BCM.hcd "$pkgdir"/lib/firmware/brcm/BCM4389C1.hcd
+	ln -s BCM.hcd "$pkgdir"/lib/firmware/brcm/BCM4349B1.hcd
+}
+
+sha512sums="
+17d44d569c160bfa20f1d75781d0118d5f56d96c7aaba9b1c32cee09edfb22c69d4847ef4c52d7cc463239e9f5906f8eb46ff926ae2aeaabe8ab0eb81909a572  BCM.hcd
+"

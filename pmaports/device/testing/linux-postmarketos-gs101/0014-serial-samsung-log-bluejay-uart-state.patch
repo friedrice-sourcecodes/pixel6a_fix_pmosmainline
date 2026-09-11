@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: postmarketOS <info@postmarketos.org>
+Date: Sun, 6 Sep 2026 20:00:00 +0900
+Subject: [PATCH] serial: samsung: log Bluejay Bluetooth UART state
+
+Log the hardware state before shutdown to diagnose a BCM4389 controller
+which accepts transmitted bytes but never returns an HCI event.
+---
+ drivers/tty/serial/samsung_tty.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/tty/serial/samsung_tty.c b/drivers/tty/serial/samsung_tty.c
+index 666666666666..777777777777 100644
+--- a/drivers/tty/serial/samsung_tty.c
++++ b/drivers/tty/serial/samsung_tty.c
+@@ -1171,6 +1171,13 @@ static void s3c64xx_serial_shutdown(struct uart_port *port)
+ {
+ 	struct s3c24xx_uart_port *ourport = to_ourport(port);
+ 
++	if (port->mapbase == 0x175b0000)
++		dev_info(port->dev,
++			 "BT UART close: UTRSTAT=%08x UFSTAT=%08x UINTP=%08x UINTM=%08x\n",
++			 rd_regl(port, S3C2410_UTRSTAT),
++			 rd_regl(port, S3C2410_UFSTAT),
++			 rd_regl(port, S3C64XX_UINTP), rd_regl(port, S3C64XX_UINTM));
++
+ 	ourport->tx_enabled = 0;
+ 	ourport->tx_mode = 0;
+ 	ourport->rx_enabled = 0;
+-- 
+2.51.0

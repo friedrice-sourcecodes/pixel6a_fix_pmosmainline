@@ -1,0 +1,37 @@
+pkgname=firmware-google-bluejay-bcmdhd
+pkgver=1
+pkgrel=3
+pkgdesc="Google Pixel 6a BCM4389 firmware and bcmdhd kernel module"
+url="https://github.com/m8l8th814n-eng/raviole_bcmd_postmarketos"
+arch="aarch64"
+license="proprietary"
+options="!check !strip"
+install="$pkgname.post-install $pkgname.post-upgrade"
+source="
+	bcmdhd.ko
+	bcmdhd.cal
+	bcmdhd_clm.blob
+	bcmdhd.conf
+	fw_bcmdhd.bin
+"
+
+package() {
+	install -Dm644 "$srcdir"/bcmdhd.ko \
+		"$pkgdir"/usr/lib/modules/7.0.6-gs101/extra/bcmdhd.ko
+	install -Dm644 "$srcdir"/fw_bcmdhd.bin \
+		"$pkgdir"/lib/firmware/fw_bcmdhd.bin
+	install -Dm644 "$srcdir"/bcmdhd.cal \
+		"$pkgdir"/lib/firmware/bcmdhd.cal
+	install -Dm644 "$srcdir"/bcmdhd_clm.blob \
+		"$pkgdir"/lib/firmware/bcmdhd_clm.blob
+	install -Dm644 "$srcdir"/bcmdhd.conf \
+		"$pkgdir"/usr/lib/modules-load.d/bcmdhd.conf
+}
+
+sha512sums="
+005dd1fe7b09e61cc17245347a4987ee0e13b536c1245cfd7471849d3142f87d37da68761828b67223911247d2c447a741afcbcffe2b9845eab13ebd741960a2  bcmdhd.ko
+7a3672ba9264fbfc88b9daacb52c971c1454da79adad789985967c4c5f3928a26ac5b0d21cdcd69f2363b8d83d1c84513adeea55d78038410a6a52f4ff987e28  bcmdhd.cal
+96ddb64ee5bd20f2febe724d644afc5a610986ee7b77a6122e52d5628c1a8b0b5e5d27d3fd77c835f05727b02647947d43a96c2facfbb85dd8d8df1a002eb2db  bcmdhd_clm.blob
+49645401e265f49cb942ef899f6ad80eb52c5b94c9eca5c311dcc3d64e0da49fa905674f3e5dc228fd2c4f3162f0c76b2a6fbab9a531031c2b21b27c57ce3ba2  bcmdhd.conf
+b2aee4fb12bc80e1b2b95390fabbb8390bdc48c5796905cdbc3726c49f637ec7780c3288dce92c5875962dcb718db48cb4e36cbfdf73e0b1753ebcb71bd1a3c4  fw_bcmdhd.bin
+"

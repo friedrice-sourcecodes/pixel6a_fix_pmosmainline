@@ -1,0 +1,17 @@
+#!/bin/sh
+# Conservative fallback until GS101 ACPM thermal zones are supported.
+for policy in /sys/devices/system/cpu/cpufreq/policy*; do
+	[ -d "$policy" ] || continue
+	[ -w "$policy/scaling_governor" ] && echo schedutil > "$policy/scaling_governor"
+	[ -w "$policy/energy_performance_preference" ] && \
+		echo balance_power > "$policy/energy_performance_preference"
+	[ -w "$policy/schedutil/up_rate_limit_us" ] && \
+		echo 2000 > "$policy/schedutil/up_rate_limit_us"
+	[ -w "$policy/schedutil/down_rate_limit_us" ] && \
+		echo 20000 > "$policy/schedutil/down_rate_limit_us"
+done
+
+for policy in policy0 policy4 policy6; do
+	path="/sys/devices/system/cpu/cpufreq/$policy/scaling_max_freq"
+	[ -w "$path" ] && echo 1401000 > "$path"
+done

@@ -1,0 +1,21 @@
+pkgname=bluejay-btloader
+pkgver=0.1
+pkgrel=2
+pkgdesc="Google Bluejay BCM4389 firmware provisioner"
+url="https://android.googlesource.com/platform/hardware/interfaces"
+arch="aarch64"
+license="Apache-2.0"
+options="!check"
+source="bluejay-btloader.c"
+
+build() {
+	$CC $CFLAGS $LDFLAGS -Wall -Wextra -o bluejay-btloader bluejay-btloader.c
+}
+
+package() {
+	install -Dm755 bluejay-btloader "$pkgdir"/usr/libexec/bluejay-btloader
+}
+
+sha512sums="
+b45978e29df66f48095ed07d0998f90d0d4184cc71b7cb370c06d070b5ff701b2acb7aea6f9e613385d71e5a4a4e755d0ec4399e0b0de361096b752370af71a2  bluejay-btloader.c
+"

@@ -1,0 +1,112 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: postmarketOS <info@postmarketos.org>
+Date: Sun, 6 Sep 2026 14:20:00 +0900
+Subject: [PATCH] arm64: dts: gs101: add BCM4389 Bluetooth UART
+
+Describe the BCM4389 Bluetooth function on the always-on APM USI UART.
+Use the closest supported Broadcom serdev binding; the controller firmware
+is supplied separately by the Bluejay firmware package.
+---
+ arch/arm64/boot/dts/exynos/google/gs101-pinctrl.dtsi | 27 ++++++++++++++
+ arch/arm64/boot/dts/exynos/google/gs101.dtsi         | 40 +++++++++++++++++++++
+ 2 files changed, 67 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/exynos/google/gs101-pinctrl.dtsi b/arch/arm64/boot/dts/exynos/google/gs101-pinctrl.dtsi
+index e37cc888c4f0..222222222222 100644
+--- a/arch/arm64/boot/dts/exynos/google/gs101-pinctrl.dtsi
++++ b/arch/arm64/boot/dts/exynos/google/gs101-pinctrl.dtsi
+@@ -202,6 +202,15 @@ gpa11: gpa11-gpio-bank {
+ 		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH 0>,
+ 			     <GIC_SPI 66 IRQ_TYPE_LEVEL_HIGH 0>;
+ 	};
++
++	bt_host_wake: bt-host-wake-pins {
++		samsung,pins = "gpa6-6";
++		samsung,pin-function = <GS101_PIN_FUNC_EINT>;
++		samsung,pin-pud = <GS101_PIN_PULL_DOWN>;
++		samsung,pin-drv = <GS101_PIN_DRV_2_5_MA>;
++		samsung,pin-con-pdn = <GS101_PIN_PDN_PREV>;
++		samsung,pin-pud-pdn = <GS101_PIN_PULL_DOWN>;
++	};
+ };
+ 
+ &pinctrl_gsacore {
+@@ -973,6 +982,24 @@ spi1_cs_func: spi1-cs-func-pins {
+ 		samsung,pin-pud = <GS101_PIN_PULL_NONE>;
+ 		samsung,pin-drv = <GS101_PIN_DRV_2_5_MA>;
+ 	};
++
++	bt_reg_on: bt-reg-on-pins {
++		samsung,pins = "gpp16-2";
++		samsung,pin-function = <GS101_PIN_FUNC_OUTPUT>;
++		samsung,pin-pud = <GS101_PIN_PULL_NONE>;
++		samsung,pin-drv = <GS101_PIN_DRV_2_5_MA>;
++		samsung,pin-con-pdn = <GS101_PIN_PDN_PREV>;
++		samsung,pin-pud-pdn = <GS101_PIN_PULL_NONE>;
++	};
++
++	bt_dev_wake: bt-dev-wake-pins {
++		samsung,pins = "gpp14-3";
++		samsung,pin-function = <GS101_PIN_FUNC_OUTPUT>;
++		samsung,pin-pud = <GS101_PIN_PULL_NONE>;
++		samsung,pin-drv = <GS101_PIN_DRV_2_5_MA>;
++		samsung,pin-con-pdn = <GS101_PIN_PDN_PREV>;
++		samsung,pin-pud-pdn = <GS101_PIN_PULL_DOWN>;
++	};
+ };
+ 
+ &pinctrl_peric1 {
+
+diff --git a/arch/arm64/boot/dts/exynos/google/gs101.dtsi b/arch/arm64/boot/dts/exynos/google/gs101.dtsi
+index 0634255ca1a6..111111111111 100644
+--- a/arch/arm64/boot/dts/exynos/google/gs101.dtsi
++++ b/arch/arm64/boot/dts/exynos/google/gs101.dtsi
+@@ -1985,6 +1985,46 @@ cmu_top: clock-controller@1e080000 {
+ 			clock-names = "oscclk";
+ 		};
+ 
++		usi_uart_bt: usi@175b00c0 {
++			compatible = "google,gs101-usi", "samsung,exynos850-usi";
++			reg = <0x175b00c0 0x20>;
++			ranges;
++			#address-cells = <1>;
++			#size-cells = <1>;
++			clocks = <&cmu_apm CLK_GOUT_APM_APM_USI1_UART_PCLK>,
++				 <&cmu_apm CLK_GOUT_APM_CLK_APM_USI1_UART_CLK>;
++			clock-names = "pclk", "ipclk";
++			assigned-clocks = <&cmu_apm CLK_MOUT_APM_FUNC>;
++			assigned-clock-parents = <&cmu_apm CLK_MOUT_APM_FUNCSRC>;
++			samsung,sysreg = <&sysreg_apm 0x4e4>;
++			samsung,mode = <USI_MODE_UART>;
++			status = "okay";
++
++			serial_16: serial@175b0000 {
++				compatible = "google,gs101-uart";
++				reg = <0x175b0000 0xc0>;
++				interrupts = <GIC_SPI 69 IRQ_TYPE_LEVEL_HIGH 0>;
++				clocks = <&cmu_apm CLK_GOUT_APM_APM_USI1_UART_PCLK>,
++					 <&cmu_apm CLK_GOUT_APM_CLK_APM_USI1_UART_CLK>;
++				clock-names = "uart", "clk_uart_baud0";
++				samsung,uart-fifosize = <256>;
++				uart-has-rtscts;
++				pinctrl-names = "default";
++				pinctrl-0 = <&uart16_bus>;
++				status = "okay";
++
++				bluetooth {
++					compatible = "brcm,bcm4349-bt";
++					current-speed = <115200>;
++					pinctrl-names = "default";
++					pinctrl-0 = <&bt_reg_on &bt_dev_wake &bt_host_wake>;
++					shutdown-gpios = <&gpp16 2 GPIO_ACTIVE_HIGH>;
++					device-wakeup-gpios = <&gpp14 3 GPIO_ACTIVE_HIGH>;
++					host-wakeup-gpios = <&gpa6 6 GPIO_ACTIVE_HIGH>;
++				};
++			};
++		};
++
+ 		gpu: gpu@1c500000 {
+ 			compatible = "google,gs101-mali", "arm,mali-valhall-jm";
+ 			reg = <0x1c500000 0x5000>;
+-- 
+2.51.0

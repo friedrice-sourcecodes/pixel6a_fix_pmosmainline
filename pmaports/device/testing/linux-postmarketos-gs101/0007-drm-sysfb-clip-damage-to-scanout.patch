@@ -1,0 +1,28 @@
+From: Codex <codex@localhost>
+Subject: [PATCH] drm/sysfb: clip damage rectangle to scanout bounds
+
+The destination address is calculated from the intersection of the plane and
+damage rectangles, but the blitter receives the original damage rectangle.
+If userspace supplies damage extending one line beyond the plane, the format
+conversion loop writes one stride beyond the mapped system framebuffer.
+
+Pass the intersected rectangle to the blitter as well. This keeps both its
+dimensions and destination offset within the scanout mapping.
+---
+ drivers/gpu/drm/sysfb/drm_sysfb_modeset.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/sysfb/drm_sysfb_modeset.c b/drivers/gpu/drm/sysfb/drm_sysfb_modeset.c
+index 71cd7ea..4e746d9 100644
+--- a/drivers/gpu/drm/sysfb/drm_sysfb_modeset.c
++++ b/drivers/gpu/drm/sysfb/drm_sysfb_modeset.c
+@@ -361,6 +361,6 @@ void drm_sysfb_plane_helper_atomic_update(struct drm_plane *plane, struct drm_at
+ 
+ 		iosys_map_incr(&dst, drm_fb_clip_offset(dst_pitch, dst_format, &dst_clip));
+-		blit_to_crtc(&dst, &dst_pitch, shadow_plane_state->data, fb, &damage,
++		blit_to_crtc(&dst, &dst_pitch, shadow_plane_state->data, fb, &dst_clip,
+ 			     &shadow_plane_state->fmtcnv_state);
+ 	}
+ 
+-- 
+2.51.0
