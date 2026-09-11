@@ -62,6 +62,18 @@ BLUEJAY_PMBOOTSTRAP_CONFIG="$PWD/work/pmbootstrap-bluejay-7.0.6.cfg" \
 ./build-flash.sh all
 ```
 
+The equivalent dedicated full-release entry point is:
+
+```sh
+BLUEJAY_BASE="$PWD" \
+BLUEJAY_PMAPORTS="$PWD/work/pmaports-7.0.6" \
+BLUEJAY_PMBOOTSTRAP_CONFIG="$PWD/work/pmbootstrap-bluejay-7.0.6.cfg" \
+./build-all-bluejay.sh
+```
+
+`build-all-bluejay.sh` always rebuilds Mesa and every other supported Bluejay
+component, even if `BLUEJAY_SKIP_MESA` exists in the caller's environment.
+
 The full build always rebuilds the patched Mesa package. For a local rebuild
 after Mesa has already been successfully packaged, set `BLUEJAY_SKIP_MESA=1`.
 
