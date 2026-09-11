@@ -1,8 +1,8 @@
 # Contributor: David Heidelberg <david@ixit.cz>
 maintainer="team/alpine-desktop <achill@achill.org>"
 pkgname=mesa
-pkgver=26.1.6
-pkgrel=3
+pkgver=26.2.2
+pkgrel=2
 pkgdesc="Mesa DRI OpenGL library"
 url="https://www.mesa3d.org"
 arch="aarch64"
@@ -17,7 +17,7 @@ subpackages="
 	$pkgname-gbm
 	$pkgname-vulkan-layers:_vulkan_layers
 	"
-_llvmver=22
+_llvmver=23
 depends_dev="
 	libdrm-dev
 	libxdamage-dev
@@ -64,7 +64,7 @@ makedepends="
 source="mesa-${pkgver/_/-}.tar.xz::https://archive.mesa3d.org/mesa-${pkgver/_/-}.tar.xz
 	23575.patch
 	riscv64-tls.patch
-	llvm22-armhf.patch
+	llvm23.patch
 	panfrost-g78-gs101.patch
 	"
 builddir="$srcdir/mesa-${pkgver/_/-}"
@@ -383,9 +383,9 @@ _vulkan_layers() {
 }
 
 sha512sums="
-6746b73f5b87e8ff3723eee586b4b5f033dbe6d13cd0309d743b7fa484c350268859ec8ff21aadcbca7a04070cdaa7828146dd28dde4b1935bb879891d687f0b  mesa-26.1.6.tar.xz
+55b1234c8653dad9b85ba3de7b777a0d957909baf4628f0c00e21d4ba89c004cb687a1dcf8da46ed0a092231dd4f859027509f83ad8c558750845ba470902615  mesa-26.2.2.tar.xz
 91bdda3a4b5906963c8c0053ebb924b952dac3d50e66afee87a7abebf82141426b34dce7e1947fe18c54dedd33537792ec13a94504ff7ad890243507d57fdc88  23575.patch
 ce1887fb7d425b94c375a0547bee40c308809c01f5ce1bcddabcc69a7fcb445efb9d5f5c7bac49b2778ab40687c7bce204d278b0bf028d124c75e59083107fba  riscv64-tls.patch
-689a9f604845e00351e0dc067a0fc2f0c721fb57f3e02431bcb1c338fb31964af74b6725eddea647076e0356161bac403c31cfe09f8dd1ec4fcfd9a06ea097a8  llvm22-armhf.patch
-b0ea0215ecede1e178305d6059b8a04276cd80c8c1def6084a85b58044d11e31d88578b87b3971b8f6c176ab85b1066c8590bedbafdee5e6ee37ae1ab0b6f5de  panfrost-g78-gs101.patch
+3efb6cc4716839605cf839e8fb37e9426eb411ab2e23ebeac6e71d0ec73d370aeb63a115a7b0e3daefe01885ae3a217989b66d2b8a59fbc7e71ea039fb3b30ee  llvm23.patch
+7955266b72a33797c47c6a1fb88c5bd3414e7f5d1550a6ef4e4137f0af580744f1d354ac929888ffbad234c043aae496fca3551424676fa54a8f740ec3b0a97a  panfrost-g78-gs101.patch
 "

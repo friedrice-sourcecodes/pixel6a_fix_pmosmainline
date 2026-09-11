@@ -14,8 +14,8 @@ Google Pixel 6a (`bluejay`, Tensor GS101).
 | Battery reporting and charging | Working, experimental |
 | Thermal sensors | Read-only ACPM probes implemented; device validation pending |
 | Plasma Mobile | Working |
-| Audio | Not working |
-| Calls/mobile data/SMS | Not working; CPIF/tinycbd bring-up is incomplete |
+| Audio | Not included; the experimental AOC stack can freeze or reboot the device |
+| Calls/mobile data/SMS | Not included; experimental RIL work is kept out of this release |
 | Deep suspend | Not working; retain s2idle |
 
 This is development-quality software. Keep a Google factory image available,
@@ -59,18 +59,31 @@ OpenRC enforces this order:
 1. load the `nitrous_min` power driver;
 2. power-cycle and provision BCM4389, retrying cold-boot initialization;
 3. attach and bring up `hci0`;
-4. start `bluetoothd`;
-5. start Plasma/BlueDevil with `bluetoothBlocked=false`.
+4. wait 25 seconds for the controller to settle;
+5. restart `bluetoothd`, power on `hci0` and make it pairable;
+6. start Plasma/BlueDevil with `bluetoothBlocked=false`.
 
 The Bluetooth address is not committed. It can be set in
 `/etc/conf.d/bluejay-bluetooth`; otherwise a stable locally administered address
 is derived at boot.
 
+The finalization step deliberately mirrors the manual recovery sequence that
+proved reliable after a cold boot. Check it with
+`rc-service bluejay-bluetooth-finalize status`.
+
+## Deliberately excluded
+
+This release contains no AOC audio firmware/driver package, speaker-amplifier
+patch, CPIF modem patch, modem module archive, `tinycbd`, SIT monitor or RIL
+service. Those experiments are not safe or complete enough for an out-of-box
+image.
+
 ## Wi-Fi power policy
 
-The device configuration keeps `wlan1` unmanaged, enables Wi-Fi power saving on
-managed Wi-Fi connections, and disables mDNS/LLMNR by default. IPv6 remains
-enabled. Users who explicitly prefer the measured lower-power policy can run:
+The device configuration keeps `wlan1` unmanaged, disables Wi-Fi power saving
+on managed Wi-Fi connections to avoid periodic `bcmdhd` traffic stalls, and
+disables mDNS/LLMNR by default. IPv6 remains enabled. Users who explicitly
+prefer the lower-power policy can run:
 
 ```sh
 sudo bluejay-wifi-low-power on
@@ -95,4 +108,3 @@ Relevant upstream work(Great thanks to M8):
 
 Use s2idle. Do not select deep suspend yet. UFS runtime power management remains
 a separate unresolved investigation and is intentionally unchanged here.
-

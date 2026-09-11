@@ -5,33 +5,36 @@ rendering corruption. Backport the model quirk used by mesa-gs101.
 
 --- a/src/panfrost/model/pan_model.h
 +++ b/src/panfrost/model/pan_model.h
-@@ -86,2 +86,3 @@ struct pan_model {
-      bool no_hierarchical_tiling;
-      bool max_4x_msaa;
+@@ -89,3 +89,4 @@ struct pan_model {
+       bool no_hierarchical_tiling;
+       bool max_4x_msaa;
 +      bool no_crc;
+    } quirks;
 
 --- a/src/panfrost/model/pan_model.c
 +++ b/src/panfrost/model/pan_model.c
-@@ -78,6 +78,9 @@
-                                               MODEL_RATES(2, 4,  32)),
-    VALHALL_MODEL(PAN_PROD_ID(9, 0, 3), 0, "G57",    "TNAx", MODEL_ANISO(ALL),  MODEL_TB_SIZES(16384,  8192),
-                                               MODEL_RATES(2, 4,  32)),
+@@ -86,6 +86,9 @@
+                                               MODEL_RATES_X(2, 4, 8,  32,  32, 8)),
+    VALHALL_MODEL(PAN_PROD_ID(9, 0, 3), 0, "G57",    "G77", MODEL_ANISO(ALL),  MODEL_TB_SIZES(16384,  8192),
+                                               MODEL_RATES_X(2, 4, 8,  32,  32, 8)),
 +   VALHALL_MODEL(PAN_PROD_ID(9, 2, 2), 0, "G78",    "TBOx", MODEL_ANISO(ALL),  MODEL_TB_SIZES(16384,  8192),
-+                                              MODEL_RATES(2, 4,  32),
++                                              MODEL_RATES_X(2, 4, 8,  32,  32, 8),
 +                                              MODEL_QUIRKS( .no_crc = true )),
-    VALHALL_MODEL(PAN_PROD_ID(10, 8, 7), 0, "G610",   "TVIx", MODEL_ANISO(ALL),  MODEL_TB_SIZES(32768, 16384),
-                                               MODEL_RATES(4, 8,  64)),
-    VALHALL_MODEL(PAN_PROD_ID(10, 12, 4), 0, "G310v1",   "TVAx", MODEL_ANISO(ALL),  MODEL_TB_SIZES(16384,  8192),
+    VALHALL_MODEL(PAN_PROD_ID(10, 8, 7), 0, "G610",   "G710", MODEL_ANISO(ALL),  MODEL_TB_SIZES(32768, 16384),
+                                               MODEL_RATES_X(4, 8, 16,  64,  64, 16)),
+    /* var/cvt/sfu rates might not be correct (we haven't found any detailed documentation) */
 
 --- a/src/gallium/drivers/panfrost/pan_resource.c
 +++ b/src/gallium/drivers/panfrost/pan_resource.c
-@@ -828,6 +828,9 @@ panfrost_should_checksum(const struct panfrost_device *dev,
+@@ -845,9 +845,12 @@ panfrost_should_checksum(const struct panfrost_device *dev,
+    unsigned bytes_per_pixel_max = (dev->arch == 6) ? 6 : 4;
+
     unsigned bytes_per_pixel = MAX2(pres->base.nr_samples, 1) *
                                util_format_get_blocksize(pres->base.format);
- 
+
 +   if (dev->model->quirks.no_crc)
 +      return false;
 +
     return pres->base.bind & PIPE_BIND_RENDER_TARGET && panfrost_is_2d(pres) &&
            bytes_per_pixel <= bytes_per_pixel_max &&
-           pres->base.last_level == 0 && !(dev->debug & PAN_DBG_NO_CRC);
+           !(dev->debug & PAN_DBG_NO_CRC);

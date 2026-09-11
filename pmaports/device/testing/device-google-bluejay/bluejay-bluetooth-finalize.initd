@@ -1,0 +1,35 @@
+#!/sbin/openrc-run
+
+description="Finalize Bluejay Bluetooth after BCM4389 provisioning"
+
+depend() {
+	need bluejay-bluetooth dbus
+	after bluejay-bluetooth dbus
+}
+
+start() {
+	ebegin "Waiting for the Bluejay Bluetooth controller"
+	sleep 25
+
+	if ! [ -e /sys/class/bluetooth/hci0 ]; then
+		eend 1 "hci0 is unavailable after BCM4389 provisioning"
+		return 1
+	fi
+
+	# bluetoothd may have started before hci0 appeared during parallel boot.
+	# Restart it after provisioning, matching the known-good manual sequence.
+	if ! rc-service bluetooth restart; then
+		eend 1 "could not restart bluetoothd"
+		return 1
+	fi
+	sleep 3
+
+	hciconfig hci0 up >/dev/null 2>&1 || true
+	if ! bluetoothctl power on >/dev/null 2>&1; then
+		eend 1 "could not power on hci0 through bluetoothd"
+		return 1
+	fi
+
+	bluetoothctl pairable on >/dev/null 2>&1 || true
+	eend 0
+}

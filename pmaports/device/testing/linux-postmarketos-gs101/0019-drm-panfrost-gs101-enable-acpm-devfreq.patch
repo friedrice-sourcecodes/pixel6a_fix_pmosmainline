@@ -1,0 +1,99 @@
+diff --git a/arch/arm64/boot/dts/exynos/google/gs101.dtsi b/arch/arm64/boot/dts/exynos/google/gs101.dtsi
+index 802adcf0f..644939338 100644
+--- a/arch/arm64/boot/dts/exynos/google/gs101.dtsi
++++ b/arch/arm64/boot/dts/exynos/google/gs101.dtsi
+@@ -2037,6 +2037,7 @@
+ 			compatible = "google,gs101-mali", "arm,mali-valhall-jm";
+ 			reg = <0x1c500000 0x5000>;
+-			clocks = <&ext_24_5m>;
++			clocks = <&acpm_ipc GS101_CLK_ACPM_DVFS_G3D>;
++			operating-points-v2 = <&gpu_opp_table>;
+ 			interrupt-names = "job", "mmu", "gpu";
+ 			interrupts = <GIC_SPI 420 IRQ_TYPE_LEVEL_HIGH 0>,
+ 				     <GIC_SPI 421 IRQ_TYPE_LEVEL_HIGH 0>,
+@@ -2047,6 +2048,20 @@
+ 			dma-coherent;
+ 		};
+ 
++		gpu_opp_table: opp-table-gpu {
++			compatible = "operating-points-v2";
++
++			opp-151000000 { opp-hz = /bits/ 64 <151000000>; };
++			opp-202000000 { opp-hz = /bits/ 64 <202000000>; };
++			opp-251000000 { opp-hz = /bits/ 64 <251000000>; };
++			opp-302000000 { opp-hz = /bits/ 64 <302000000>; };
++			opp-351000000 { opp-hz = /bits/ 64 <351000000>; };
++			opp-400000000 { opp-hz = /bits/ 64 <400000000>; };
++			opp-471000000 { opp-hz = /bits/ 64 <471000000>; };
++			opp-510000000 { opp-hz = /bits/ 64 <510000000>; };
++			opp-572000000 { opp-hz = /bits/ 64 <572000000>; };
++		};
++
+ 		aoc: aoc@19000000 {
+ 			compatible = "google,aoc";
+ 			reg = <0x19000000 0x01000000>,
+diff --git a/drivers/gpu/drm/panfrost/panfrost_devfreq.c b/drivers/gpu/drm/panfrost/panfrost_devfreq.c
+index b51c30778..71076f578 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_devfreq.c
++++ b/drivers/gpu/drm/panfrost/panfrost_devfreq.c
+@@ -127,7 +127,8 @@ int panfrost_devfreq_init(struct panfrost_device *pfdev)
+ 	struct panfrost_devfreq *pfdevfreq = &pfdev->pfdevfreq;
+ 	unsigned long freq = ULONG_MAX;
+ 
+-	if (pfdev->comp->num_supplies > 1) {
++	if (pfdev->comp->num_supplies > 1 &&
++	    !pfdev->comp->opp_no_regulators) {
+ 		/*
+ 		 * GPUs with more than 1 supply require platform-specific handling:
+ 		 * continue without devfreq
+@@ -140,7 +141,10 @@ int panfrost_devfreq_init(struct panfrost_device *pfdev)
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = devm_pm_opp_set_regulators(dev, pfdev->comp->supply_names);
++	ret = 0;
++	if (!pfdev->comp->opp_no_regulators)
++		ret = devm_pm_opp_set_regulators(dev,
++						 pfdev->comp->supply_names);
+ 	if (ret) {
+ 		/* Continue if the optional regulator is missing */
+ 		if (ret != -ENODEV) {
+diff --git a/drivers/gpu/drm/panfrost/panfrost_device.c b/drivers/gpu/drm/panfrost/panfrost_device.c
+index 7fed22d55..f7a87f616 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_device.c
++++ b/drivers/gpu/drm/panfrost/panfrost_device.c
+@@ -254,7 +254,8 @@ int panfrost_device_init(struct panfrost_device *pfdev)
+ 	}
+ 
+ 	/* OPP will handle regulators */
+-	if (!pfdev->pfdevfreq.opp_of_table_added) {
++	if (!pfdev->pfdevfreq.opp_of_table_added ||
++	    pfdev->comp->opp_no_regulators) {
+ 		err = panfrost_regulator_init(pfdev);
+ 		if (err)
+ 			goto out_devfreq;
+diff --git a/drivers/gpu/drm/panfrost/panfrost_device.h b/drivers/gpu/drm/panfrost/panfrost_device.h
+index ec55c136b..fbf5937eb 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_device.h
++++ b/drivers/gpu/drm/panfrost/panfrost_device.h
+@@ -99,6 +99,8 @@ struct panfrost_compatible {
+ 	/* Supplies count and names. */
+ 	int num_supplies;
+ 	const char * const *supply_names;
++	/* The platform clock provider performs voltage scaling internally. */
++	bool opp_no_regulators;
+ 	/*
+ 	 * Number of power domains required, note that values 0 and 1 are
+ 	 * handled identically, as only values > 1 need special handling.
+diff --git a/drivers/gpu/drm/panfrost/panfrost_drv.c b/drivers/gpu/drm/panfrost/panfrost_drv.c
+index 3d57cc8d5..c6ac9a2bd 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_drv.c
++++ b/drivers/gpu/drm/panfrost/panfrost_drv.c
+@@ -1082,6 +1082,7 @@ static const char * const gs101_supplies[] = { "mali", "buck8s", "ldo1s", "buck7
+ static const struct panfrost_compatible gs101_data = {
+ 	.num_supplies = ARRAY_SIZE(gs101_supplies) - 1,
+ 	.supply_names = gs101_supplies,
++	.opp_no_regulators = true,
+ 	.num_pm_domains = 1, /* optional */
+ 	.pm_domain_names = NULL,
+ };

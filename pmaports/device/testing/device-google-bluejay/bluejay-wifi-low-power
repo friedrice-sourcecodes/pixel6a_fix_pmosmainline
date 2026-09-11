@@ -33,10 +33,9 @@ case "$mode" in
 			ipv6.method auto \
 			connection.mdns default \
 			connection.llmnr default \
-			802-11-wireless.powersave 3
+			802-11-wireless.powersave 2
 		;;
 	*) usage ;;
 esac
 
 echo "Updated '$connection'. Reconnect it to apply the new policy."
-
