@@ -86,7 +86,7 @@ are not redistributed here. Obtain them from firmware/source you are legally
 allowed to use and place them beside the corresponding APKBUILD. The checksums
 in each recipe identify the exact payload used during development.
 
-Relevant upstream work:
+Relevant upstream work(Great thanks to M8):
 
 - <https://github.com/m8l8th814n-eng/linux-mainline/tree/gs101-7.2>
 - <https://github.com/m8l8th814n-eng/mesa-gs101>
