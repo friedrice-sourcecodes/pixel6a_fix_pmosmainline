@@ -95,7 +95,7 @@ profile after changing the policy.
 ## Proprietary firmware
 
 Broadcom Wi-Fi/Bluetooth firmware, calibration data and the prebuilt `bcmdhd.ko`
-are not redistributed here (for now). Modified sources will be provided later.
+are not redistributed here. Modified sources, however, are included in this repo.
 
 Relevant upstream work(Great thanks to M8):
 
