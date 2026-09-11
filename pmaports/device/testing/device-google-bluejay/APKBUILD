@@ -2,11 +2,12 @@ maintainer="Ingo Reitz <9l@9lo.re>"
 pkgname=device-google-bluejay
 pkgdesc="Google Pixel 6a"
 pkgver=6
-pkgrel=35
+pkgrel=36
 url="https://postmarketos.org"
 license="MIT"
 arch="aarch64"
 options="!check !archcheck"
+install="$pkgname-openrc.post-install"
 depends="
 	android-tools
 	bluejay-btloader
