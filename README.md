@@ -82,9 +82,7 @@ profile after changing the policy.
 ## Proprietary firmware
 
 Broadcom Wi-Fi/Bluetooth firmware, calibration data and the prebuilt `bcmdhd.ko`
-are not redistributed here. Obtain them from firmware/source you are legally
-allowed to use and place them beside the corresponding APKBUILD. The checksums
-in each recipe identify the exact payload used during development.
+are not redistributed here (for now). Modified sources will be provided later.
 
 Relevant upstream work(Great thanks to M8):
 
