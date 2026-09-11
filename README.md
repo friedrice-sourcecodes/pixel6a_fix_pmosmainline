@@ -12,7 +12,7 @@ Google Pixel 6a (`bluejay`, Tensor GS101).
 | Wi-Fi | Working through `bcmdhd` |
 | Bluetooth | Working through the Bluejay BCM4389 provisioner |
 | Battery reporting and charging | Working, experimental |
-| Thermal sensors | Read-only ACPM probes implemented; device validation pending |
+| Thermal management | Working; ACPM sensors plus a validated userspace governor |
 | Plasma Mobile | Working |
 | Audio | Not included; the experimental AOC stack can freeze or reboot the device |
 | Calls/mobile data/SMS | Not included; experimental RIL work is kept out of this release |
@@ -108,3 +108,7 @@ Relevant upstream work(Great thanks to M8):
 
 Use s2idle. Do not select deep suspend yet. UFS runtime power management remains
 a separate unresolved investigation and is intentionally unchanged here.
+
+The `bluejay-thermal-control` OpenRC service progressively limits CPU and GPU
+frequencies at 68, 76 and 84 degrees Celsius. During sustained 1080p60 playback,
+the first stage held the tested device near 68 degrees Celsius.

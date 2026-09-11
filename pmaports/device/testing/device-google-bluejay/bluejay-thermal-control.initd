@@ -1,0 +1,11 @@
+#!/sbin/openrc-run
+
+description="Bluejay userspace thermal governor"
+command="/usr/sbin/bluejay-thermal-control"
+command_background="yes"
+pidfile="/run/bluejay-thermal-control.pid"
+
+depend() {
+	need dev
+	after modules
+}

@@ -1,0 +1,101 @@
+#!/bin/sh
+
+set -eu
+
+interval=${BLUEJAY_THERMAL_INTERVAL:-2}
+state=unknown
+
+pick_frequency() {
+	available=$1
+	limit=$2
+	selected=0
+	for frequency in $available; do
+		if [ "$frequency" -le "$limit" ] && [ "$frequency" -gt "$selected" ]; then
+			selected=$frequency
+		fi
+	done
+	[ "$selected" -gt 0 ] && printf '%s\n' "$selected" || printf '%s\n' "$limit"
+}
+
+set_cpu_limit() {
+	policy=$1
+	limit=$2
+	path="/sys/devices/system/cpu/cpufreq/$policy"
+	[ -d "$path" ] || return 0
+	available=$(cat "$path/scaling_available_frequencies" 2>/dev/null || true)
+	[ -n "$available" ] || available=$(cat "$path/cpuinfo_max_freq")
+	frequency=$(pick_frequency "$available" "$limit")
+	echo "$frequency" > "$path/scaling_max_freq"
+}
+
+set_gpu_limit() {
+	limit=$1
+	path=/sys/class/devfreq/1c500000.gpu
+	[ -d "$path" ] || return 0
+	available=$(cat "$path/available_frequencies" 2>/dev/null || true)
+	[ -n "$available" ] || available=$(cat "$path/max_freq")
+	frequency=$(pick_frequency "$available" "$limit")
+	echo "$frequency" > "$path/max_freq"
+}
+
+apply_state() {
+	new_state=$1
+	[ "$new_state" = "$state" ] && return 0
+
+	case "$new_state" in
+		cool)
+			for path in /sys/devices/system/cpu/cpufreq/policy*; do
+				[ -d "$path" ] || continue
+				cat "$path/cpuinfo_max_freq" > "$path/scaling_max_freq"
+			done
+			path=/sys/class/devfreq/1c500000.gpu
+			[ ! -d "$path" ] || cat "$path/available_frequencies" |
+				tr ' ' '\n' | sort -n | tail -1 > "$path/max_freq"
+			;;
+		warm)
+			set_cpu_limit policy0 1401000
+			set_cpu_limit policy4 1328000
+			set_cpu_limit policy6 1277000
+			set_gpu_limit 400000000
+			;;
+		hot)
+			set_cpu_limit policy0 1098000
+			set_cpu_limit policy4 1098000
+			set_cpu_limit policy6 1098000
+			set_gpu_limit 302000000
+			;;
+		critical)
+			set_cpu_limit policy0 738000
+			set_cpu_limit policy4 738000
+			set_cpu_limit policy6 738000
+			set_gpu_limit 251000000
+			;;
+	esac
+
+	logger -t bluejay-thermal "state=$new_state max_temp=${max_temp}mC"
+	state=$new_state
+}
+
+while :; do
+	max_temp=0
+	for zone in /sys/class/thermal/thermal_zone*; do
+		[ -r "$zone/type" ] || continue
+		case "$(cat "$zone/type")" in
+			cpu-*-thermal|gpu-thermal|isp-thermal|tpu-thermal) ;;
+			*) continue ;;
+		esac
+		temp=$(cat "$zone/temp" 2>/dev/null || echo 0)
+		[ "$temp" -le "$max_temp" ] || max_temp=$temp
+	done
+
+	case "$state:$max_temp" in
+		critical:*|hot:*) [ "$max_temp" -lt 72000 ] && next=warm || next=$state ;;
+		warm:*) [ "$max_temp" -lt 64000 ] && next=cool || next=warm ;;
+		*) next=cool ;;
+	esac
+	[ "$max_temp" -ge 68000 ] && next=warm
+	[ "$max_temp" -ge 76000 ] && next=hot
+	[ "$max_temp" -ge 84000 ] && next=critical
+	apply_state "$next"
+	sleep "$interval"
+done

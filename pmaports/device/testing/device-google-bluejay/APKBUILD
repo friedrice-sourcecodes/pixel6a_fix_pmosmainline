@@ -2,7 +2,7 @@ maintainer="Ingo Reitz <9l@9lo.re>"
 pkgname=device-google-bluejay
 pkgdesc="Google Pixel 6a"
 pkgver=6
-pkgrel=29
+pkgrel=30
 url="https://postmarketos.org"
 license="MIT"
 arch="aarch64"
@@ -32,6 +32,8 @@ source="
 	modules-initfs
 	polkit-networkmanager-wheel.rules
 	bluejay-power.start
+	bluejay-thermal-control
+	bluejay-thermal-control.initd
 	bluejay-bluetooth.initd
 	bluejay-bluetooth-finalize.initd
 	bluejay-bluetooth.confd
@@ -53,6 +55,10 @@ package() {
 		"$pkgdir"/etc/polkit-1/rules.d/49-networkmanager-wheel.rules
 	install -Dm755 "$srcdir"/bluejay-power.start \
 		"$pkgdir"/etc/local.d/bluejay-power.start
+	install -Dm755 "$srcdir"/bluejay-thermal-control \
+		"$pkgdir"/usr/sbin/bluejay-thermal-control
+	install -Dm755 "$srcdir"/bluejay-thermal-control.initd \
+		"$pkgdir"/etc/init.d/bluejay-thermal-control
 	install -Dm755 "$srcdir"/bluejay-bluetooth.initd \
 		"$pkgdir"/etc/init.d/bluejay-bluetooth
 	install -Dm755 "$srcdir"/bluejay-bluetooth-finalize.initd \
@@ -79,6 +85,8 @@ d6f7d8b009175e05c5166c0deb6929dc6d517bec4573893d6b49671a2402a3f620ea7a07ac946438
 a5171dc7a4221a5a63c02820bac1e372c557cee72db9f777099f67eb272595fad6019f876cb47dd1bf455eeb3a45a74f215f2e8c44a6e1bf7cf3d7d9f49d98ad  modules-initfs
 d90d7232f038c4771aafbed1a24692bc077792ec50353fddc08cfcb6545a48d57c3bdfedd8d48e857317a1c670c2eeecae3983ddd827ec3288c1695d4e0d1c52  polkit-networkmanager-wheel.rules
 ecbb4abb9c3d00a8d46a158c4a8d2d87724f30eb56f7e19d79037fb5617d7007358dc5ec683419dd2abe584e20afa284c68605f7711f4e8b9c3ef3a1400115ba  bluejay-power.start
+d410715b13fb777fd0a18e39136a640427b303e29783ece64eef596132af228f6d70d4cdf13d51701ce77a9612083ec45570bdfada1c8ecc51ae7ad4a5cd9604  bluejay-thermal-control
+b3f364ce3d5f6a419ecdf33203ada58be1b13883d94496b6a91778ccae41354fb3f9607a2d748735e534a57c5ee5b76004f2c643f4a1b0eed78e33377436286d  bluejay-thermal-control.initd
 7bd17ddff1592b86b6d47dea5b58bd4006e3986248330a238174d9bcf0b00c676643a99fe401be0e4cc2da14bcf8e750afe624f53d679c2fa17f0c118e150552  bluejay-bluetooth.initd
 f104636a2955c0ca0d252bef7b41947bdc8a0ca2f6731ab971e066ebe265961ad31a3279185d1a856304cfdddbb9955da03fbb6a3521f43bd7287ae05af50ae8  bluejay-bluetooth-finalize.initd
 ee950315e82bea665ae0a3c03f837f26f67ad9361ecd6185c6b70a98d7fea1cc5f3e3d52d23c98324d7fb5b0438658edb3e8ae71e37eb20b4d363d8988b13208  bluejay-bluetooth.confd
