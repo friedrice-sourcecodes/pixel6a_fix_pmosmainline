@@ -15,7 +15,9 @@ build_images() {
 	sudo $pmb build --arch aarch64 --force bluejay-btloader
 	sudo $pmb build --arch aarch64 --force firmware-google-bluejay-bcmdhd
 	sudo $pmb build --arch aarch64 --force firmware-google-bluejay-bluetooth
-	sudo $pmb build --arch aarch64 --force mesa
+	if [ "${BLUEJAY_SKIP_MESA:-0}" != "1" ]; then
+		sudo $pmb build --arch aarch64 --force mesa
+	fi
 	sudo $pmb build --arch aarch64 --force linux-postmarketos-gs101
 	sudo $pmb build --arch aarch64 --force device-google-bluejay
 	if [ -n "$password" ]; then

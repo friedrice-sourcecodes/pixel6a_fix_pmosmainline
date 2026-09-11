@@ -2,7 +2,7 @@ diff --git a/arch/arm64/boot/dts/exynos/google/gs101.dtsi b/arch/arm64/boot/dts/
 index 802adcf0f..644939338 100644
 --- a/arch/arm64/boot/dts/exynos/google/gs101.dtsi
 +++ b/arch/arm64/boot/dts/exynos/google/gs101.dtsi
-@@ -2037,6 +2037,7 @@
+@@ -2037,10 +2037,25 @@
  			compatible = "google,gs101-mali", "arm,mali-valhall-jm";
  			reg = <0x1c500000 0x5000>;
 -			clocks = <&ext_24_5m>;
@@ -11,10 +11,9 @@ index 802adcf0f..644939338 100644
  			interrupt-names = "job", "mmu", "gpu";
  			interrupts = <GIC_SPI 420 IRQ_TYPE_LEVEL_HIGH 0>,
  				     <GIC_SPI 421 IRQ_TYPE_LEVEL_HIGH 0>,
-@@ -2047,6 +2048,20 @@
+ 				     <GIC_SPI 419 IRQ_TYPE_LEVEL_HIGH 0>;
  			dma-coherent;
  		};
- 
 +		gpu_opp_table: opp-table-gpu {
 +			compatible = "operating-points-v2";
 +
@@ -29,9 +28,7 @@ index 802adcf0f..644939338 100644
 +			opp-572000000 { opp-hz = /bits/ 64 <572000000>; };
 +		};
 +
- 		aoc: aoc@19000000 {
- 			compatible = "google,aoc";
- 			reg = <0x19000000 0x01000000>,
+ 	};
 diff --git a/drivers/gpu/drm/panfrost/panfrost_devfreq.c b/drivers/gpu/drm/panfrost/panfrost_devfreq.c
 index b51c30778..71076f578 100644
 --- a/drivers/gpu/drm/panfrost/panfrost_devfreq.c

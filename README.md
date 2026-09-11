@@ -37,7 +37,13 @@ their relative paths. Configure pmbootstrap to use that checkout before building
 
 ## Build
 
-The helper expects an initialized pmbootstrap configuration and pmaports tree:
+The repository's `build-flash.sh` is the complete build script. It builds every
+component included in this release: the BCM4389 loader, Wi-Fi firmware package,
+Bluetooth firmware package, patched Mesa, patched GS101 kernel, Bluejay device
+package, root filesystem, initramfs and flashable images.
+
+The helper expects an initialized pmbootstrap configuration and a pmaports tree
+containing the directories from this repository:
 
 ```sh
 BLUEJAY_BASE="$PWD" \
@@ -45,6 +51,19 @@ BLUEJAY_PMAPORTS="$PWD/work/pmaports-7.0.6" \
 BLUEJAY_PMBOOTSTRAP_CONFIG="$PWD/work/pmbootstrap-bluejay-7.0.6.cfg" \
 ./build-flash.sh build
 ```
+
+To build everything and immediately flash `boot`, `vendor_boot` and `userdata`,
+put the phone in the Bluejay fastboot bootloader and use:
+
+```sh
+BLUEJAY_BASE="$PWD" \
+BLUEJAY_PMAPORTS="$PWD/work/pmaports-7.0.6" \
+BLUEJAY_PMBOOTSTRAP_CONFIG="$PWD/work/pmbootstrap-bluejay-7.0.6.cfg" \
+./build-flash.sh all
+```
+
+The full build always rebuilds the patched Mesa package. For a local rebuild
+after Mesa has already been successfully packaged, set `BLUEJAY_SKIP_MESA=1`.
 
 Set `BLUEJAY_PASSWORD` only if a non-interactive image build is desired.
 Otherwise pmbootstrap asks for the image user's password.
