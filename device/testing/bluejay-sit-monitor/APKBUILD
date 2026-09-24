@@ -1,0 +1,24 @@
+# Maintainer: Bluejay Port <bluejay@example.com>
+pkgname=bluejay-sit-monitor
+pkgver=0.1
+pkgrel=0
+pkgdesc="Read-only Samsung SIT traffic monitor for Google Bluejay"
+url="https://postmarketos.org"
+arch="aarch64"
+license="GPL-2.0-only"
+options="!check"
+source="bluejay-sit-monitor.c"
+
+build() {
+	$CC $CFLAGS $CPPFLAGS -Wall -Wextra -Werror \
+		-o bluejay-sit-monitor bluejay-sit-monitor.c $LDFLAGS
+}
+
+package() {
+	install -Dm755 bluejay-sit-monitor \
+		"$pkgdir"/usr/bin/bluejay-sit-monitor
+}
+
+sha512sums="
+d36e4431fa20093abe2373f9e13df5c5842fd129fe7dee93156a21c5c464fdf0c4bb2d7be293174d08ba32bbab2674fdc51a7de5442cf7bc45206c0df693d82b  bluejay-sit-monitor.c
+"

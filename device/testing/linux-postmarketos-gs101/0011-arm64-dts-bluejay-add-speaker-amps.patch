@@ -1,0 +1,151 @@
+--- a/arch/arm64/boot/dts/exynos/google/gs101-bluejay.dts
++++ b/arch/arm64/boot/dts/exynos/google/gs101-bluejay.dts
+@@ -8,6 +8,7 @@
+ /dts-v1/;
+ 
+ #include "gs101-pixel-common.dtsi"
++#include "gs101-bluejay-audio.dtsi"
+ 
+ / {
+ 	model = "Bluejay";
+--- /dev/null
++++ b/arch/arm64/boot/dts/exynos/google/gs101-bluejay-audio.dtsi
+@@ -0,0 +1,138 @@
++// SPDX-License-Identifier: GPL-2.0-only
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/interrupt-controller/irq.h>
++
++&dai_be_tdm0_rx {
++	codec {
++		sound-dai = <&cs35l41_l 0>, <&cs35l41_r 0>;
++	};
++};
++
++&dai_be_tdm0_tx {
++	codec {
++		sound-dai = <&cs35l41_l 0>, <&cs35l41_r 0>;
++	};
++};
++
++&aoc_snd_card {
++	clks {
++		sys {
++			sys@cs35l41_l {
++				comp = <&cs35l41_l>;
++				src = "BCLK";
++				id = <0>;
++				srcid = <0>;
++				in_mul = <1>;
++				out_mul = <1>;
++			};
++			sys@cs35l41_r {
++				comp = <&cs35l41_r>;
++				src = "BCLK";
++				id = <0>;
++				srcid = <0>;
++				in_mul = <1>;
++				out_mul = <1>;
++			};
++		};
++	};
++};
++
++&pinctrl_gpio_alive {
++	cs35l41_r_irq: cs35l41-r-irq {
++		samsung,pins = "gpa9-6";
++		samsung,pin-function = <GS101_PIN_FUNC_EINT>;
++		samsung,pin-pud = <GS101_PIN_PULL_NONE>;
++	};
++};
++
++&pinctrl_far_alive {
++	cs35l41_l_irq: cs35l41-l-irq {
++		samsung,pins = "gpa6-3";
++		samsung,pin-function = <GS101_PIN_FUNC_EINT>;
++		samsung,pin-pud = <GS101_PIN_PULL_NONE>;
++	};
++};
++
++&pinctrl_peric0 {
++	cs35l41_l_rst: cs35l41-l-rst {
++		samsung,pins = "gpp16-3";
++		samsung,pin-function = <GS101_PIN_FUNC_OUTPUT>;
++		samsung,pin-pud = <GS101_PIN_PULL_NONE>;
++		samsung,pin-con-pdn = <GS101_PIN_PDN_PREV>;
++		samsung,pin-pud-pdn = <GS101_PIN_PULL_NONE>;
++	};
++	cs35l41_cs2: cs35l41-cs2 {
++		samsung,pins = "gpp1-0";
++		samsung,pin-pud = <GS101_PIN_PULL_NONE>;
++	};
++};
++
++&pinctrl_peric1 {
++	cs35l41_r_rst: cs35l41-r-rst {
++		samsung,pins = "gpp23-7";
++		samsung,pin-function = <GS101_PIN_FUNC_OUTPUT>;
++		samsung,pin-pud = <GS101_PIN_PULL_NONE>;
++		samsung,pin-con-pdn = <GS101_PIN_PDN_PREV>;
++		samsung,pin-pud-pdn = <GS101_PIN_PULL_NONE>;
++	};
++	cs35l41_miso: cs35l41-miso {
++		samsung,pins = "gpp25-2";
++		samsung,pin-pud = <GS101_PIN_PULL_DOWN>;
++	};
++	cs35l41_mosi: cs35l41-mosi {
++		samsung,pins = "gpp25-1";
++		samsung,pin-drv = <GS101_PIN_DRV_5_MA>;
++	};
++	cs35l41_clk: cs35l41-clk {
++		samsung,pins = "gpp25-0";
++		samsung,pin-drv = <GS101_PIN_DRV_5_MA>;
++	};
++};
++
++&spi_13 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&spi13_bus &spi13_cs_func &cs35l41_cs2
++		     &cs35l41_miso &cs35l41_mosi &cs35l41_clk>;
++	cs-gpios = <&gpp25 3 GPIO_ACTIVE_LOW>, <&gpp1 0 GPIO_ACTIVE_LOW>;
++	num-cs = <2>;
++
++	cs35l41_l: amplifier@0 {
++		#sound-dai-cells = <1>;
++		compatible = "cirrus,cs35l41";
++		spi-max-frequency = <25000000>;
++		reg = <0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&cs35l41_l_irq &cs35l41_l_rst>;
++		interrupt-parent = <&gpa6>;
++		interrupts = <3 IRQ_TYPE_LEVEL_LOW>;
++		reset-gpios = <&gpp16 3 GPIO_ACTIVE_LOW>;
++		VA-supply = <&s2mpg11_bucka>;
++		VP-supply = <&V_SYS_dummy>;
++		cirrus,boost-peak-milliamp = <3500>;
++		cirrus,boost-ind-nanohenry = <1000>;
++		cirrus,boost-cap-microfarad = <30>;
++		cirrus,asp-sdout-hiz = <3>;
++	};
++
++	cs35l41_r: amplifier@1 {
++		#sound-dai-cells = <1>;
++		sound-name-prefix = "R";
++		compatible = "cirrus,cs35l41";
++		spi-max-frequency = <25000000>;
++		reg = <1>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&cs35l41_r_irq &cs35l41_r_rst>;
++		interrupt-parent = <&gpa9>;
++		interrupts = <6 IRQ_TYPE_LEVEL_LOW>;
++		reset-gpios = <&gpp23 7 GPIO_ACTIVE_LOW>;
++		VA-supply = <&s2mpg11_bucka>;
++		VP-supply = <&V_SYS_dummy>;
++		cirrus,boost-peak-milliamp = <3500>;
++		cirrus,boost-ind-nanohenry = <1000>;
++		cirrus,boost-cap-microfarad = <30>;
++		cirrus,asp-sdout-hiz = <3>;
++	};
++};

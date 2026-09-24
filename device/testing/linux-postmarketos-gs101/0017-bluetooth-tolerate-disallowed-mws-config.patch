@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000017 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] Bluetooth: tolerate disallowed optional MWS configuration
+
+Some Broadcom controllers, including the BCM4389C1 used by Bluejay,
+advertise Get MWS Transport Layer Configuration but return Command
+Disallowed when it is queried.  The command is optional for normal
+Bluetooth operation, so do not abort HCI initialization for this response.
+
+---
+ net/bluetooth/hci_sync.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/net/bluetooth/hci_sync.c b/net/bluetooth/hci_sync.c
+index 111111111111..222222222222 100644
+--- a/net/bluetooth/hci_sync.c
++++ b/net/bluetooth/hci_sync.c
+@@ -4768,11 +4768,17 @@ static int hci_read_local_pairing_opts_sync(struct hci_dev *hdev)
+ /* Get MWS transport configuration if the HCI command is supported */
+ static int hci_get_mws_transport_config_sync(struct hci_dev *hdev)
+ {
++	int err;
++
+ 	if (!mws_transport_config_capable(hdev))
+ 		return 0;
+ 
+-	return __hci_cmd_sync_status(hdev, HCI_OP_GET_MWS_TRANSPORT_CONFIG,
+-				     0, NULL, HCI_CMD_TIMEOUT);
++	err = __hci_cmd_sync_status(hdev, HCI_OP_GET_MWS_TRANSPORT_CONFIG,
++				    0, NULL, HCI_CMD_TIMEOUT);
++	if (err == -EBUSY)
++		return 0;
++
++	return err;
+ }
+ 
+ /* Check for Synchronization Train support */
+-- 
+2.51.0

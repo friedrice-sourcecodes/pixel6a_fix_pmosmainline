@@ -1,0 +1,47 @@
+#!/bin/sh
+set -eu
+
+state=/var/lib/tinycbd
+mkdir -p "$state/nv" "$state/mnt/modem" "$state/mnt/efs" "$state/mnt/mud"
+
+partdev() {
+	label="$1"
+	path="/dev/disk/by-partlabel/$label"
+	if [ -e "$path" ]; then
+		readlink -f "$path"
+		return
+	fi
+	blkid -t "PARTLABEL=$label" -o device | head -n 1
+}
+
+copy_from() {
+	dev="$1"
+	mnt="$2"
+	src="$3"
+	dst="$4"
+	mount -o ro "$dev" "$mnt"
+	if ! cp -L "$mnt/$src" "$dst"; then
+		umount "$mnt"
+		return 1
+	fi
+	umount "$mnt"
+}
+
+slot="$(sed -n 's/.*androidboot.slot_suffix=\([^ ]*\).*/\1/p' /proc/cmdline)"
+case "$slot" in
+	_a|_b) modem_label="modem$slot" ;;
+	*) modem_label=modem_a ;;
+esac
+
+modem_dev="$(partdev "$modem_label")"
+efs_dev="$(partdev efs)"
+mud_dev="$(partdev modem_userdata)"
+
+[ -n "$modem_dev" ] && [ -n "$efs_dev" ] && [ -n "$mud_dev" ]
+
+copy_from "$modem_dev" "$state/mnt/modem" images/default/modem.bin "$state/modem.bin"
+copy_from "$efs_dev" "$state/mnt/efs" nv_normal.bin "$state/nv/nv_normal.bin"
+copy_from "$efs_dev" "$state/mnt/efs" nv_protected.bin "$state/nv/nv_protected.bin"
+copy_from "$mud_dev" "$state/mnt/mud" replay_region.bin "$state/nv/replay_region.bin"
+
+chmod 600 "$state/modem.bin" "$state"/nv/*

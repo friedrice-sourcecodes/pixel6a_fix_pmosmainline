@@ -1,0 +1,99 @@
+maintainer="Ingo Reitz <9l@9lo.re>"
+pkgname=device-google-bluejay
+pkgdesc="Google Pixel 6a"
+pkgver=6
+pkgrel=36
+url="https://postmarketos.org"
+license="MIT"
+arch="aarch64"
+options="!check !archcheck"
+install="$pkgname-openrc.post-install"
+depends="
+	android-tools
+	bluejay-btloader
+	bluez-deprecated
+	firmware-google-bluejay-bcmdhd
+	firmware-google-bluejay-bluetooth
+	libgpiod
+	linux-postmarketos-gs101
+	mesa=26.2.2-r2
+	mesa-dri-gallium=26.2.2-r2
+	mesa-egl=26.2.2-r2
+	mesa-gbm=26.2.2-r2
+	mesa-gl=26.2.2-r2
+	mesa-gles=26.2.2-r2
+	mesa-vulkan-panfrost=26.2.2-r2
+	postmarketos-base
+	soc-google-gs101
+"
+makedepends="devicepkg-dev"
+source="
+	deviceinfo
+	kernel-cmdline.conf
+	modules-initfs
+	polkit-networkmanager-wheel.rules
+	bluejay-power.start
+	bluejay-thermal-control
+	bluejay-thermal-control.initd
+	bluejay-bluetooth.initd
+	bluejay-bluetooth-finalize.initd
+	bluejay-bluetooth.confd
+	bluedevilglobalrc
+	NetworkManager-bluejay.conf
+	bluejay-wifi-low-power
+	max77759-charger.conf
+	90-bluejay-gpu.sh
+"
+
+build() {
+	devicepkg_build $startdir $pkgname
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+
+	install -Dm644 "$srcdir"/polkit-networkmanager-wheel.rules \
+		"$pkgdir"/etc/polkit-1/rules.d/49-networkmanager-wheel.rules
+	install -Dm755 "$srcdir"/bluejay-power.start \
+		"$pkgdir"/etc/local.d/bluejay-power.start
+	install -Dm755 "$srcdir"/bluejay-thermal-control \
+		"$pkgdir"/usr/sbin/bluejay-thermal-control
+	install -Dm755 "$srcdir"/bluejay-thermal-control.initd \
+		"$pkgdir"/etc/init.d/bluejay-thermal-control
+	install -Dm755 "$srcdir"/bluejay-bluetooth.initd \
+		"$pkgdir"/etc/init.d/bluejay-bluetooth
+	install -Dm755 "$srcdir"/bluejay-bluetooth-finalize.initd \
+		"$pkgdir"/etc/init.d/bluejay-bluetooth-finalize
+	install -Dm644 "$srcdir"/bluejay-bluetooth.confd \
+		"$pkgdir"/etc/conf.d/bluejay-bluetooth
+	install -Dm644 "$srcdir"/bluedevilglobalrc \
+		"$pkgdir"/etc/xdg/bluedevilglobalrc
+	install -Dm644 "$srcdir"/bluedevilglobalrc \
+		"$pkgdir"/etc/skel/.config/bluedevilglobalrc
+	install -Dm644 "$srcdir"/NetworkManager-bluejay.conf \
+		"$pkgdir"/etc/NetworkManager/conf.d/20-bluejay.conf
+	install -Dm755 "$srcdir"/bluejay-wifi-low-power \
+		"$pkgdir"/usr/bin/bluejay-wifi-low-power
+	install -Dm644 "$srcdir"/max77759-charger.conf \
+		"$pkgdir"/etc/modules-load.d/max77759-charger.conf
+	install -Dm644 "$srcdir"/90-bluejay-gpu.sh \
+		"$pkgdir"/etc/tinydm.d/env-wayland.d/90-bluejay-gpu.sh
+}
+
+sha512sums="
+d6f7d8b009175e05c5166c0deb6929dc6d517bec4573893d6b49671a2402a3f620ea7a07ac9464383eb718fbc4a0d70e0a6379c74738af8f11de08a38dd5ba81  deviceinfo
+9ed1246237067259c1e533bbbda28de56836a8ebe2fe9dc079f038552062be6b7daf9e2f46261d293d7eb58fa2d3d52d516f98c309f6adcd01d910a0e436cfcf  kernel-cmdline.conf
+a5171dc7a4221a5a63c02820bac1e372c557cee72db9f777099f67eb272595fad6019f876cb47dd1bf455eeb3a45a74f215f2e8c44a6e1bf7cf3d7d9f49d98ad  modules-initfs
+d90d7232f038c4771aafbed1a24692bc077792ec50353fddc08cfcb6545a48d57c3bdfedd8d48e857317a1c670c2eeecae3983ddd827ec3288c1695d4e0d1c52  polkit-networkmanager-wheel.rules
+67f2bee75a5e6e080475a301174564e6074473f89182caedd2f10bf8de45619114f0c262667499659674dbb56ac263ca58204d49be9cbeff49fbeab7ba9577ff  bluejay-power.start
+d410715b13fb777fd0a18e39136a640427b303e29783ece64eef596132af228f6d70d4cdf13d51701ce77a9612083ec45570bdfada1c8ecc51ae7ad4a5cd9604  bluejay-thermal-control
+b3f364ce3d5f6a419ecdf33203ada58be1b13883d94496b6a91778ccae41354fb3f9607a2d748735e534a57c5ee5b76004f2c643f4a1b0eed78e33377436286d  bluejay-thermal-control.initd
+7bd17ddff1592b86b6d47dea5b58bd4006e3986248330a238174d9bcf0b00c676643a99fe401be0e4cc2da14bcf8e750afe624f53d679c2fa17f0c118e150552  bluejay-bluetooth.initd
+f104636a2955c0ca0d252bef7b41947bdc8a0ca2f6731ab971e066ebe265961ad31a3279185d1a856304cfdddbb9955da03fbb6a3521f43bd7287ae05af50ae8  bluejay-bluetooth-finalize.initd
+ee950315e82bea665ae0a3c03f837f26f67ad9361ecd6185c6b70a98d7fea1cc5f3e3d52d23c98324d7fb5b0438658edb3e8ae71e37eb20b4d363d8988b13208  bluejay-bluetooth.confd
+2d1ff3fc2186a748a3587571a9f2d401bc7f48599148f3dd2f23ca0ca13bceefe8aa8f42bc2313c8a443ebe63724b5fbe9bd80443453b97879618d587f56ebe0  bluedevilglobalrc
+3a0ae202c0f386afe143d3f1f4ccf0546ee54a44d7a6fafdc8ec95d3a439e4a9d592fd6c4dd94185086018249896fcb05c02185d8261fcd65456e811a76edd04  NetworkManager-bluejay.conf
+4ec210cf2c7e29e90ae8ccd360988f14a19ba662ee1590d9bc56055fcc4629e704e25c754660035a0678575e97afc025a164ea303846bce9baafca29f8be274a  bluejay-wifi-low-power
+dbf9ee8866177e1e2f83e841a53f078b3ebe4ee4a4ec14734fa0c2fb73cd578a65126e8fab4436a77b49e06374ba2ccdf69f4f960ffcce3e629418abfb8017a1  max77759-charger.conf
+e0c28c2c458c13524437e18331636c010d2c180c3b816efe039f9c0e41bfc45fffa9c78849becc0eb05f4e1d3581670a9ea6fd63cc96a9a17c17bbeb6225324f  90-bluejay-gpu.sh
+"

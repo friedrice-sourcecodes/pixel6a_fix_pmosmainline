@@ -1,0 +1,6 @@
+#!/bin/sh
+
+rc-update add bluejay-bluetooth default
+rc-update add bluetooth default
+rc-update add bluejay-bluetooth-finalize default
+rc-update add bluejay-thermal-control default

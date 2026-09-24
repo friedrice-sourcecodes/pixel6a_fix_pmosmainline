@@ -1,0 +1,96 @@
+maintainer="Clayton Craft <clayton@craftyguy.net>"
+pkgname=linux-postmarketos-asahi
+pkgver=7.1.10_p1
+pkgrel=0
+_rel=${pkgver#*_p}
+_kver=${pkgver%_p*}
+_kver=${_kver//_/-}
+_asahiver=$_kver-$_rel
+pkgdesc="Kernel for Apple M-series devices"
+arch="aarch64"
+_carch="arm64"
+_flavor="postmarketos-asahi"
+url="https://kernel.org"
+license="GPL-2.0-only"
+options="!strip
+	!check
+	!tracedeps
+	pmb:cross-native
+	pmb:kconfigcheck-community
+	pmb:kconfigcheck-lockdown
+	pmb:kconfigcheck-rust
+	pmb:kconfigcheck-selinux
+	pmb:kconfigcheck-uefi
+	pmb:kconfigcheck-virt
+"
+makedepends="
+	bash
+	bc
+	bison
+	clang
+	clang-libclang
+	devicepkg-dev
+	diffutils
+	elfutils-dev
+	findutils
+	flex
+	git
+	linux-headers
+	lld
+	llvm
+	openssl-dev
+	pahole
+	perl
+	python3
+	rust
+	rust-bindgen
+	rust-src
+	rustfmt
+	sed
+	zstd
+"
+
+# Source
+_repository="linux"
+source="
+	$pkgname-$_asahiver.tar.gz::https://github.com/AsahiLinux/linux/archive/refs/tags/asahi-$_asahiver.tar.gz
+	config-postmarketos-asahi.aarch64
+
+	enable-dynamic-ftrace.patch
+"
+builddir="$srcdir/linux-asahi-$_asahiver"
+
+prepare() {
+	default_prepare
+	cp "$srcdir/config-$_flavor.$CARCH" .config
+}
+
+build() {
+	unset LDFLAGS
+	make ARCH="$_carch" LLVM=1 \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-$_flavor"
+}
+
+package() {
+	install -Dm644 "$builddir/arch/$_carch/boot/vmlinuz.efi" \
+			"$pkgdir/boot/linux.efi"
+
+	make modules_install dtbs_install \
+		ARCH="$_carch" \
+		LLVM=1 \
+		INSTALL_PATH="$pkgdir"/boot/ \
+		INSTALL_MOD_PATH="$pkgdir/usr" \
+		INSTALL_MOD_STRIP=1 \
+		INSTALL_DTBS_PATH="$pkgdir"/boot/dtbs-asahi
+
+	rm -f "$pkgdir"/lib/modules/*/build "$pkgdir"/lib/modules/*/source
+
+	install -D "$builddir"/include/config/kernel.release \
+		"$pkgdir"/usr/share/kernel/$_flavor/kernel.release
+}
+
+sha512sums="
+de0ac7bffbd301b8c69264df3ac3268f69beba63a479d8d8adbe04a9803999cddbb9437ef77bcb350deb7995903619d50cff6c7031159b1958567554a6fd52c2  linux-postmarketos-asahi-7.1.10-1.tar.gz
+2b2a2edae121c6053395f0a017c818c1741527d90bc277ac1fef36a4e10d4f75cbe3277acf4f28157d3d49852de95ad962b720b6235a617b154311916d9e7433  config-postmarketos-asahi.aarch64
+e8b595f3e076896dc38f249c8908d58e2e6a858eaa77fe1e680f27db0e76d3d74c0b5dfebb7a4c57d546fee0b0f6eb81a38b20dfd72f985c9d02f28d79a5eceb  enable-dynamic-ftrace.patch
+"

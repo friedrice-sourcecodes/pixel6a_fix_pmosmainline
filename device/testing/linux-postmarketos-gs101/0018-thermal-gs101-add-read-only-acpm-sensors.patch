@@ -1,0 +1,109 @@
+diff --git a/arch/arm64/boot/dts/exynos/google/gs101-bluejay.dts b/arch/arm64/boot/dts/exynos/google/gs101-bluejay.dts
+index a9435b26d..52127ce8f 100644
+--- a/arch/arm64/boot/dts/exynos/google/gs101-bluejay.dts
++++ b/arch/arm64/boot/dts/exynos/google/gs101-bluejay.dts
+@@ -12,4 +12,20 @@
+ / {
+ 	model = "Bluejay";
+ 	compatible = "google,gs101-bluejay", "google,gs101";
++
++	thermal_sensors: thermal-sensors {
++		compatible = "google,gs101-acpm-thermal";
++		samsung,acpm = <&acpm_ipc>;
++		samsung,acpm-channel = <9>;
++		#thermal-sensor-cells = <1>;
++	};
++
++	thermal-zones {
++		cpu-big-thermal { polling-delay-passive = <250>; polling-delay = <1000>; thermal-sensors = <&thermal_sensors 0>; };
++		cpu-mid-thermal { polling-delay-passive = <250>; polling-delay = <1000>; thermal-sensors = <&thermal_sensors 1>; };
++		cpu-little-thermal { polling-delay-passive = <250>; polling-delay = <1000>; thermal-sensors = <&thermal_sensors 2>; };
++		gpu-thermal { polling-delay-passive = <250>; polling-delay = <1000>; thermal-sensors = <&thermal_sensors 3>; };
++		isp-thermal { polling-delay-passive = <250>; polling-delay = <1000>; thermal-sensors = <&thermal_sensors 4>; };
++		tpu-thermal { polling-delay-passive = <250>; polling-delay = <1000>; thermal-sensors = <&thermal_sensors 5>; };
++	};
+ };
+diff --git a/drivers/firmware/samsung/exynos-acpm.c b/drivers/firmware/samsung/exynos-acpm.c
+index 987b59778..10de95e7d 100644
+--- a/drivers/firmware/samsung/exynos-acpm.c
++++ b/drivers/firmware/samsung/exynos-acpm.c
+@@ -462,6 +462,7 @@ int acpm_do_xfer(struct acpm_handle *handle, const struct acpm_xfer *xfer)
+ 
+ 	return acpm_wait_for_message_response(achan, xfer);
+ }
++EXPORT_SYMBOL_GPL(acpm_do_xfer);
+ 
+ /**
+  * acpm_chan_shmem_get_params() - get channel parameters and addresses of the
+diff --git a/drivers/firmware/samsung/exynos-acpm.h b/drivers/firmware/samsung/exynos-acpm.h
+index 6417550f8..9d2bcd5f9 100644
+--- a/drivers/firmware/samsung/exynos-acpm.h
++++ b/drivers/firmware/samsung/exynos-acpm.h
+@@ -7,17 +7,6 @@
+ #ifndef __EXYNOS_ACPM_H__
+ #define __EXYNOS_ACPM_H__
+ 
+-struct acpm_xfer {
+-	const u32 *txd;
+-	u32 *rxd;
+-	size_t txlen;
+-	size_t rxlen;
+-	unsigned int acpm_chan_id;
+-};
+-
+ struct acpm_handle;
+-
+-int acpm_do_xfer(struct acpm_handle *handle,
+-		 const struct acpm_xfer *xfer);
+ 
+ #endif /* __EXYNOS_ACPM_H__ */
+diff --git a/drivers/thermal/samsung/Kconfig b/drivers/thermal/samsung/Kconfig
+index f4eff5a41..8a5891474 100644
+--- a/drivers/thermal/samsung/Kconfig
++++ b/drivers/thermal/samsung/Kconfig
+@@ -9,3 +9,13 @@ config EXYNOS_THERMAL
+ 	  the TMU, reports temperature and handles cooling action if defined.
+ 	  This driver uses the Exynos core thermal APIs and TMU configuration
+ 	  data from the supported SoCs.
++
++config GS101_ACPM_THERMAL
++	tristate "GS101 read-only ACPM thermal sensors"
++	depends on ARCH_EXYNOS || COMPILE_TEST
++	depends on THERMAL_OF
++	depends on EXYNOS_ACPM_PROTOCOL
++	help
++	  Exposes the six GS101 firmware-managed TMU temperature sensors through
++	  the thermal framework. This driver only reads temperatures; it does not
++	  alter firmware thresholds, interrupts or thermal policy.
+diff --git a/drivers/thermal/samsung/Makefile b/drivers/thermal/samsung/Makefile
+index f13940715..f6d54bae5 100644
+--- a/drivers/thermal/samsung/Makefile
++++ b/drivers/thermal/samsung/Makefile
+@@ -4,3 +4,4 @@
+ #
+ obj-$(CONFIG_EXYNOS_THERMAL)			+= exynos_thermal.o
+ exynos_thermal-y				:= exynos_tmu.o
++obj-$(CONFIG_GS101_ACPM_THERMAL)		+= gs101_acpm_thermal.o
+diff --git a/include/linux/firmware/samsung/exynos-acpm-protocol.h b/include/linux/firmware/samsung/exynos-acpm-protocol.h
+index 13f17dc44..30609d8b5 100644
+--- a/include/linux/firmware/samsung/exynos-acpm-protocol.h
++++ b/include/linux/firmware/samsung/exynos-acpm-protocol.h
+@@ -13,4 +13,12 @@
+ struct acpm_handle;
+ struct device_node;
+ 
++struct acpm_xfer {
++	const u32 *txd;
++	u32 *rxd;
++	size_t txlen;
++	size_t rxlen;
++	unsigned int acpm_chan_id;
++};
++
+ struct acpm_dvfs_ops {
+@@ -52,4 +60,5 @@ struct device;
+ #if IS_ENABLED(CONFIG_EXYNOS_ACPM_PROTOCOL)
+ struct acpm_handle *devm_acpm_get_by_node(struct device *dev,
+ 					  struct device_node *np);
++int acpm_do_xfer(struct acpm_handle *handle, const struct acpm_xfer *xfer);
+ #else

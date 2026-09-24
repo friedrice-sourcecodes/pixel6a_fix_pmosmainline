@@ -1,0 +1,34 @@
+# Maintainer: Ingo Reitz <9l@9lo.re>
+pkgname=tinycbd
+pkgver=0.1
+pkgrel=5
+pkgdesc="Minimal Shannon S5123 modem boot utility"
+url="https://github.com/m8l8th814n-eng/tinycbd"
+arch="aarch64"
+license="GPL-2.0-only"
+options="!check"
+builddir="$srcdir"
+source="
+	tinycbd.c
+	tinycbd.initd
+	tinycbd-prepare
+	bluejay-ril-status
+"
+
+build() {
+	"$CC" $CFLAGS $CPPFLAGS -Wall -Wextra -o tinycbd "$srcdir/tinycbd.c" $LDFLAGS
+}
+
+package() {
+	install -Dm755 tinycbd "$pkgdir/usr/bin/tinycbd"
+	install -Dm755 "$srcdir/tinycbd-prepare" "$pkgdir/usr/libexec/tinycbd-prepare"
+	install -Dm755 "$srcdir/tinycbd.initd" "$pkgdir/etc/init.d/tinycbd"
+	install -Dm755 "$srcdir/bluejay-ril-status" "$pkgdir/usr/bin/bluejay-ril-status"
+}
+
+sha512sums="
+a10dbb702fd94d38aeb18932c9b366cb84d2ef6bd5de7d71a4d4bf01b5b63c385525f0a634e13959c80328e5af5d21f5b4ea4ce0062b6f4c74759db2dc3cc791  tinycbd.c
+f654742658b9f294468e27d07b79a2c94aa2d2502b4a439498c51668351f61153b79e2115a1c0f12a2037c638ac486e76bfbbb227d0843f58860b905b35e1861  tinycbd.initd
+224e07e6a65146705ef4d584be44d72409ac9212e45dde034f9f1770a5e6cfcce8ebd36c81aaf81338a1c6db377e9ab72d7864b1fdd845708d63e30ce0149b19  tinycbd-prepare
+23c3b098b32b22ea58f265b9dde76903f90cc747b90ad43011219a6aa7dcf153b7d2995479ed28558ba59ba7f97c0b2bd8a3c772548d9a9e3e1eb90682e9e1f4  bluejay-ril-status
+"

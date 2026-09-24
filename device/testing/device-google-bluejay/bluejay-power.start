@@ -1,0 +1,14 @@
+#!/bin/sh
+# Use the kernel's dynamic policy.  The former fixed 1.4 GHz ceiling also
+# forced policy4 and policy6 down to their next-lower OPPs, which made Plasma
+# stutter even while rendering on Panfrost.
+for policy in /sys/devices/system/cpu/cpufreq/policy*; do
+	[ -d "$policy" ] || continue
+	[ -w "$policy/scaling_governor" ] && echo schedutil > "$policy/scaling_governor"
+	[ -w "$policy/energy_performance_preference" ] && \
+		echo balance_performance > "$policy/energy_performance_preference"
+	[ -w "$policy/schedutil/up_rate_limit_us" ] && \
+		echo 2000 > "$policy/schedutil/up_rate_limit_us"
+	[ -w "$policy/schedutil/down_rate_limit_us" ] && \
+		echo 20000 > "$policy/schedutil/down_rate_limit_us"
+done

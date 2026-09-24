@@ -1,0 +1,38 @@
+# Maintainer: Ingo Reitz <9l@9lo.re>
+pkgname=firmware-google-bluejay-audio
+pkgver=1
+pkgrel=0
+pkgdesc="Google Pixel 6a CS35L41 speaker firmware"
+url="https://developers.google.com/android/images"
+arch="aarch64"
+license="proprietary"
+options="!check !strip !archcheck"
+source="
+	R-cs35l41-dsp1-spk-cali.bin
+	R-cs35l41-dsp1-spk-diag.bin
+	R-cs35l41-dsp1-spk-prot.bin
+	cs35l41-dsp1-spk-cali.bin
+	cs35l41-dsp1-spk-cali.wmfw
+	cs35l41-dsp1-spk-diag.bin
+	cs35l41-dsp1-spk-diag.wmfw
+	cs35l41-dsp1-spk-prot.bin
+	cs35l41-dsp1-spk-prot.wmfw
+"
+
+package() {
+	for file in $source; do
+		install -Dm644 "$srcdir/$file" "$pkgdir/lib/firmware/$file"
+	done
+}
+
+sha512sums="
+a6d4559922b1b6c5b1745d3517366937e2992b24892f6fdf12409ac9fe66431c6aa4db86e68c925d11ce4e44dc8a9d7a8bb5cbe968c7aa8ff88f886f61c15551  R-cs35l41-dsp1-spk-cali.bin
+3f575227c5425cad57104040bc3f628f771fe96261a1d8cff8705e4c1b18c25facf0ae714d858573e9266a4d03f9000b36c196c4cf3f663b18a36cb5d0bee968  R-cs35l41-dsp1-spk-diag.bin
+3a3b5feac0dedfab18909762124536452b29e6d0bc4450887f8f36e69f936f0509db0d0d19c0f7bb6ae16f7129614c3e4f2bb74d6a3ce37168f93db64bba8760  R-cs35l41-dsp1-spk-prot.bin
+5e86a3eaab0ab4dffe0ddad77c21ebceda90212e9ad7bedd52af7626b98cd19478e54101880c26655f4051fbcd52a0d8c142adcc137c6d84ce2c0a13d43fe9d7  cs35l41-dsp1-spk-cali.bin
+077350b450ad85c9ef2de9425ccdbe29dacaebb72e91617c2b9f15dfd1ae8ccbca8cb3f1b12e59962a22a1ab42b4e8464a16e78a4b9ab5fd44162ac9a62e1116  cs35l41-dsp1-spk-cali.wmfw
+ac26fcc5ad65f5143023bc24e38b5bddbe2974125e3ee83f9a1586fece0bca85735fa26e468a48d12cd87a15e232abf8dd04ec644b6d58533a150b4d1c54a3e8  cs35l41-dsp1-spk-diag.bin
+c85ffb0c396f62f48190c228c78d2928ae4af82fba0dabc7f294508efc80ab6585fcfed84297f7277cfc4a0ffc619a7ac279cbf825a2d39889acb551acdc73de  cs35l41-dsp1-spk-diag.wmfw
+f9ac3496a0ea464f446a89fe2f096d5584f0707e985e4bc637372e56cc53c7e1d8060ce6abf49fc3941d2750f29ea7be5c93009b28b045d775fa3bf31de3d99e  cs35l41-dsp1-spk-prot.bin
+077350b450ad85c9ef2de9425ccdbe29dacaebb72e91617c2b9f15dfd1ae8ccbca8cb3f1b12e59962a22a1ab42b4e8464a16e78a4b9ab5fd44162ac9a62e1116  cs35l41-dsp1-spk-prot.wmfw
+"

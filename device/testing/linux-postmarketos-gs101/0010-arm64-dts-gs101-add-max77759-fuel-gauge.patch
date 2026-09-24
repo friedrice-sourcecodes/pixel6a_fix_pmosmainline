@@ -1,0 +1,16 @@
+--- a/arch/arm64/boot/dts/exynos/google/gs101-pixel-common.dtsi
++++ b/arch/arm64/boot/dts/exynos/google/gs101-pixel-common.dtsi
+@@ -685,6 +685,13 @@
+ 		};
+ 	};
+ 
++	fuel-gauge@36 {
++		compatible = "maxim,max77759-fg";
++		reg = <0x36>;
++
++		shunt-resistor-micro-ohms = <5000>;
++	};
++
+ 	pmic@66 {
+ 		compatible = "maxim,max77759";
+ 		reg = <0x66>;

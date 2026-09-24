@@ -1,0 +1,18 @@
+# Maintainer: Ingo Reitz <9l@9lo.re>
+pkgname=firmware-google-bluejay-aoc
+pkgver=1
+pkgrel=0
+pkgdesc="Google Pixel 6a AoC firmware"
+url="https://developers.google.com/android/images"
+arch="aarch64"
+license="proprietary"
+options="!check !strip !archcheck"
+source="aoc.bin"
+
+package() {
+	install -Dm644 "$srcdir/aoc.bin" "$pkgdir/lib/firmware/aoc.bin"
+}
+
+sha512sums="
+5002f901a7a1b4a5f95ab680120e9db7e20b9d5376ed8f358bf5cebba6609450eebaad6a4ae14605b68cb57645f0e5704ad04f0cc5a499ecf238b81ec560673f  aoc.bin
+"

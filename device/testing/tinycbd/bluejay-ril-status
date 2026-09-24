@@ -1,0 +1,14 @@
+#!/bin/sh
+
+echo "=== tinycbd service ==="
+rc-service tinycbd status 2>&1 || true
+echo "=== CP state ==="
+/usr/bin/tinycbd -i /var/lib/tinycbd/modem.bin -n /var/lib/tinycbd/nv status 2>&1 || true
+echo "=== modem devices ==="
+ls -l /dev/umts* /dev/cp* /dev/wwan* 2>/dev/null || true
+echo "=== network links ==="
+ip -br link 2>/dev/null || true
+echo "=== recent boot log ==="
+tail -80 /var/log/tinycbd.log 2>/dev/null || true
+echo "=== recent kernel modem log ==="
+dmesg | grep -iE 'cpif|s5100|s5123|modem|pcie|shannon|umts' | tail -120

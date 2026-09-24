@@ -1,0 +1,24 @@
+#!/sbin/openrc-run
+
+description="Bootstrap the Shannon S5123 modem"
+command=/usr/bin/tinycbd
+command_args="-i /var/lib/tinycbd/modem.bin -n /var/lib/tinycbd/nv boot-all"
+command_background=no
+
+depend() {
+	need localmount
+	after modules
+	before modemmanager ofono samsungipcd
+}
+
+start_pre() {
+	modprobe shm_ipc
+	modprobe boot_device_spi
+	modprobe cpif
+	for attempt in 1 2 3 4 5; do
+		[ -e /dev/umts_boot0 ] && break
+		sleep 1
+	done
+	[ -e /dev/umts_boot0 ] || return 1
+	/usr/libexec/tinycbd-prepare
+}

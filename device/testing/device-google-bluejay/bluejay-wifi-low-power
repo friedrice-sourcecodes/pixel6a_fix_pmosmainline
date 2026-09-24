@@ -1,0 +1,41 @@
+#!/bin/sh
+set -eu
+
+usage() {
+	echo "Usage: bluejay-wifi-low-power on|off [connection]" >&2
+	exit 2
+}
+
+[ "$#" -ge 1 ] && [ "$#" -le 2 ] || usage
+mode=$1
+connection=${2:-}
+
+if [ -z "$connection" ]; then
+	connection=$(nmcli -t -f NAME,TYPE connection show --active |
+		awk -F: '$2 == "802-11-wireless" || $2 == "wifi" { print $1; exit }')
+fi
+
+[ -n "$connection" ] || {
+	echo "No active Wi-Fi connection; pass a connection name explicitly." >&2
+	exit 1
+}
+
+case "$mode" in
+	on)
+		nmcli connection modify "$connection" \
+			ipv6.method disabled \
+			connection.mdns no \
+			connection.llmnr no \
+			802-11-wireless.powersave 3
+		;;
+	off)
+		nmcli connection modify "$connection" \
+			ipv6.method auto \
+			connection.mdns default \
+			connection.llmnr default \
+			802-11-wireless.powersave 2
+		;;
+	*) usage ;;
+esac
+
+echo "Updated '$connection'. Reconnect it to apply the new policy."

@@ -1,0 +1,59 @@
+#!/bin/sh
+set -eu
+
+if [ "$(id -u)" -ne 0 ]; then
+	echo "Run this command with sudo." >&2
+	exit 1
+fi
+
+stage=${1:-1}
+case "$stage" in
+	[0-3]) ;;
+	*)
+		echo "Refusing unsafe AOC stage '$stage'; supported diagnostic stages are 0-3." >&2
+		exit 2
+		;;
+esac
+
+echo "Loading the isolated AOC diagnostic stack through safe stage $stage..."
+if [ -d /sys/module/aoc_core ]; then
+	current=$(cat /sys/module/aoc_core/parameters/aoc_stop_at 2>/dev/null || echo unknown)
+	echo "Refusing to reuse an already-loaded aoc_core module (stage $current). Reboot first." >&2
+	exit 3
+fi
+
+echo "[1/4] loading Samsung IOMMU"
+modprobe samsung_iommu
+echo "[2/4] loading Samsung IOMMU group"
+modprobe samsung-iommu-group
+echo "[3/4] loading AoC mailbox"
+modprobe mailbox_wc
+echo "[4/4] loading AoC core with stop_at=$stage"
+modprobe aoc_core "aoc_stop_at=$stage" aoc_autoload_firmware=1
+
+aoc_device=/sys/bus/platform/devices/19000000.aoc
+aoc_driver=/sys/bus/platform/drivers/aoc
+
+if [ ! -e "$aoc_device/driver" ]; then
+	echo "AOC did not bind automatically; retrying once..."
+	if ! printf '%s' 19000000.aoc > "$aoc_driver/bind"; then
+		echo "ERROR: AOC platform-device bind failed." >&2
+		echo "=== AOC device ==="
+		cat "$aoc_device/uevent" 2>/dev/null || true
+		echo "=== Deferred probes ==="
+		cat /sys/kernel/debug/devices_deferred 2>/dev/null || true
+		echo "=== AOC log ==="
+		dmesg | grep -iE 'aoc|gsa|iommu|mailbox|firmware' | tail -200
+		exit 1
+	fi
+fi
+
+if [ ! -e "$aoc_device/driver" ]; then
+	echo "ERROR: AOC driver disappeared during staged initialization." >&2
+	exit 1
+fi
+
+sleep 5
+echo "AOC stage $stage completed without releasing the coprocessor from reset."
+echo "=== AOC log ==="
+dmesg | grep -iE 'aoc|gsa|iommu|mailbox|firmware|watchdog|fault' | tail -220

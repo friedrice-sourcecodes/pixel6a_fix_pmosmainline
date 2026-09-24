@@ -1,0 +1,108 @@
+#!/sbin/openrc-run
+
+description="Initialize the Bluejay BCM4389 Bluetooth controller"
+command="/usr/bin/hciattach"
+command_args="-n -t 120 -s 3000000 /dev/ttySAC1 any 3000000 flow nosleep"
+command_background="yes"
+pidfile="/run/bluejay-bluetooth.pid"
+output_log="/var/log/bluejay-bluetooth.log"
+error_log="/var/log/bluejay-bluetooth.log"
+
+depend() {
+	need dev
+	provide bluejay-bluetooth-controller
+	after modules networkmanager
+	before bluetooth
+}
+
+start_pre() {
+	local address wifi_address machine_hex attempt provisioned=0
+
+	checkpath --file --mode 0644 "$output_log"
+	[ -c /dev/ttySAC1 ] || {
+		eerror "/dev/ttySAC1 is unavailable"
+		return 1
+	}
+	[ -s /lib/firmware/brcm/BCM.hcd ] || {
+		eerror "BCM.hcd is unavailable"
+		return 1
+	}
+
+	modprobe nitrous_min || {
+		eerror "nitrous_min failed to load"
+		return 1
+	}
+
+	# During a cold boot the shared BCM4389 rails/UART can appear before the
+	# controller is ready. Let the rest of device discovery settle, then retry
+	# the complete power/provisioning sequence instead of starting bluetoothd
+	# with a half-initialized HCI device.
+	sleep 3
+
+	address=${bluetooth_address:-}
+	if [ -z "$address" ] && [ -r /sys/class/net/wlan0/address ]; then
+		wifi_address=$(cat /sys/class/net/wlan0/address)
+		address="02:${wifi_address#*:}"
+	fi
+	if [ -z "$address" ] && [ -r /etc/machine-id ]; then
+		machine_hex=$(tr -cd '0-9a-fA-F' </etc/machine-id | cut -c1-10)
+		[ "${#machine_hex}" -eq 10 ] && address=$(printf '02:%s:%s:%s:%s:%s' \
+			"${machine_hex%????????}" \
+			"$(printf %s "$machine_hex" | cut -c3-4)" \
+			"$(printf %s "$machine_hex" | cut -c5-6)" \
+			"$(printf %s "$machine_hex" | cut -c7-8)" \
+			"$(printf %s "$machine_hex" | cut -c9-10)")
+	fi
+	[ -n "$address" ] || {
+		eerror "could not determine a stable Bluetooth address"
+		return 1
+	}
+
+	for attempt in 1 2 3; do
+		rfkill block bluetooth
+		sleep 0.3
+		rfkill unblock bluetooth
+		sleep 1
+
+		if /usr/libexec/bluejay-btloader \
+			/dev/ttySAC1 /lib/firmware/brcm/BCM.hcd "$address"; then
+			einfo "BCM4389 provisioned on attempt $attempt"
+			provisioned=1
+			break
+		fi
+
+		ewarn "BCM4389 provisioning attempt $attempt failed"
+		[ "$attempt" -lt 3 ] && sleep 3
+	done
+	[ "$provisioned" -eq 1 ] || {
+		eerror "BCM4389 firmware provisioning failed after 3 attempts"
+		return 1
+	}
+	einfo "using Bluetooth address $address"
+}
+
+start_post() {
+	local timeout=120
+
+	while [ ! -e /sys/class/bluetooth/hci0 ] && [ "$timeout" -gt 0 ]; do
+		sleep 1
+		timeout=$((timeout - 1))
+	done
+	[ -e /sys/class/bluetooth/hci0 ] || {
+		eerror "hci0 did not appear"
+		return 1
+	}
+
+	/usr/bin/hciconfig hci0 up || {
+		eerror "failed to bring hci0 up"
+		return 1
+	}
+	# Give the management socket time to observe the controller before the
+	# dependent bluetooth service starts bluetoothd.
+	sleep 2
+
+}
+
+stop_post() {
+	rfkill block bluetooth 2>/dev/null || true
+}

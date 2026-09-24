@@ -1,0 +1,58 @@
+# Co-Maintainer: Stefan Hansson <newbyte@postmarketos.org>
+maintainer="Erikas Bitovtas <xerikasxx@gmail.com>"
+pkgname=soc-qcom-sm7125
+pkgver=7
+pkgrel=0
+pkgdesc="Common package for Qualcomm SM7125 devices"
+url="https://postmarketos.org"
+license="BSD-3-Clause"
+arch="aarch64"
+options="!check !archcheck !tracedeps"
+depends="
+	bootmac
+	msm-modem
+	msm-modem-uim-selection
+	tqftpserv
+"
+install="$pkgname-openrc.post-install"
+subpackages="
+	$pkgname-openrc
+	$pkgname-ucm
+	"
+replaces="soc-qcom-sm7125-nonfree-firmware"
+_ucm_commit="a34eab049098b78ac5f586b11d93060046da3247"
+source="
+	30-gpu-firmware.files
+	alsa-ucm-conf-$_ucm_commit.tar.gz::https://github.com/sm7125-mainline/alsa-ucm-conf/archive/$_ucm_commit/alsa-ucm-conf-$_ucm_commit.tar.gz
+	UPower.conf
+"
+
+package() {
+	# Shutdown when battery is critical instead of sleep
+	install -Dm644 "$srcdir"/UPower.conf \
+		"$pkgdir"/etc/UPower/UPower.conf.d/50-sm7125.conf
+
+	install -Dm644 "$srcdir"/30-gpu-firmware.files \
+		"$pkgdir"/usr/share/mkinitfs/files/30-gpu-firmware.files
+}
+
+openrc() {
+	default_openrc
+	depends="tqftpserv-openrc"
+
+	mkdir -p "$subpkgdir"
+}
+
+ucm() {
+	provides="alsa-ucm-conf=0.$pkgver-r$pkgrel" # versioned provides need to be below default version
+
+	# install audio config files
+	mkdir -p "$subpkgdir"/usr/share/alsa/ucm2
+	cp -r "$srcdir/alsa-ucm-conf-$_ucm_commit"/ucm2 "$subpkgdir"/usr/share/alsa/
+}
+
+sha512sums="
+73438ceec8ca76dec24a92718d456d17b01a23510ee0b0e6c1263e3f6c2ca82263a3e41298c0a8ebf3dd8439da354fc1c914fd475ad1cf5c669c200770df62fa  30-gpu-firmware.files
+7b383b931932a85812040a8a445a2d45cb6f31fa966073b1709b2d922e8a5fad0c39d0b9501c835bcf016d2e999f9bdb990fe946d4b3c811002105d2ab84b8f5  alsa-ucm-conf-a34eab049098b78ac5f586b11d93060046da3247.tar.gz
+72e8ed55499976574fa09e6c3b79c0e046c786932179cfd30788a80037906a45861f09f6663fa1bc15a4571be97b3a40ee3631988bffd1c9ee9f360358b6486a  UPower.conf
+"
